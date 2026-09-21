@@ -506,16 +506,20 @@ header {{ padding:2rem 2rem 1rem; max-width:1500px; margin:0 auto }}
 h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
 .lead {{ color:var(--muted); max-width:72ch; font-size:.92rem }}
 .meta {{ font-size:.8rem; color:var(--muted); margin-top:.8rem }}
+/* 検索欄・並べ替え・フィルタチップをまとめて画面の上に貼り付ける。
+   828 行をスクロールしている最中に絞り込みを変えたくなるので、
+   チップもここに入れて一緒に残す */
 .bar {{ position:sticky; top:0; z-index:9; background:var(--bar);
         backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
-        padding:.7rem 2rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap }}
+        padding:.7rem 2rem }}
+.ctl {{ display:flex; gap:1rem; align-items:center; flex-wrap:wrap }}
 .bar input {{ padding:.45rem .7rem; border:1px solid var(--line); border-radius:6px;
               font-size:.9rem; width:22rem; max-width:50vw }}
 .bar button {{ padding:.4rem .7rem; border:1px solid var(--line); background:var(--surface);
                color:inherit;
                border-radius:6px; cursor:pointer; font-size:.85rem }}
 .bar button.on {{ background:var(--accent); color:var(--on-accent); border-color:var(--accent) }}
-.chips {{ max-width:1500px; margin:.9rem auto 0; padding:0 2rem; display:flex; gap:.4rem; flex-wrap:wrap }}
+.chips {{ margin:.6rem 0 0; display:flex; gap:.4rem; flex-wrap:wrap }}
 .chip {{ padding:.25rem .6rem; border:1px solid var(--line); background:var(--surface);
          color:inherit; border-radius:999px;
          cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }}
@@ -601,12 +605,14 @@ details.dt > summary {{ display:none }}
 @media (max-width: 900px) {{
   header {{ padding:1.2rem 1rem .6rem }}
   h1 {{ font-size:1.25rem }}
-  .bar {{ padding:.6rem 1rem; gap:.5rem }}
-  .bar input {{ width:100%; max-width:none; order:-1 }}
+  .bar {{ padding:.6rem 1rem }}
+  .ctl {{ gap:.5rem }}
+  .bar input {{ width:100%; max-width:none }}
   #count {{ margin-left:0 }}
   main, footer {{ padding:0 1rem }}
-  /* チップは 13 個あって折り返すと 3 行になる。1 行にして横に送る */
-  .chips {{ padding:0 1rem; margin-top:.7rem; flex-wrap:nowrap;
+  /* チップは 13 個あって折り返すと 3 行になる。貼り付けている帯が
+     画面の高さを食うので、1 行にして横に送る */
+  .chips {{ margin-top:.5rem; flex-wrap:nowrap;
             overflow-x:auto; scrollbar-width:none }}
   .chips::-webkit-scrollbar {{ display:none }}
   .chip {{ flex:0 0 auto }}
@@ -661,12 +667,14 @@ details.dt > summary {{ display:none }}
 </details>
 </header>
 <div class="bar">
-  <input id="q" type="search" placeholder="検索 (コードポイント・書名・読み・意味…)">
-  <button data-sort="cp" class="on">コードポイント順</button>
-  <button data-sort="strokes">画数順</button>
-  <span id="count"></span>
+  <div class="ctl">
+    <input id="q" type="search" placeholder="検索 (コードポイント・書名・読み・意味…)">
+    <button data-sort="cp" class="on">コードポイント順</button>
+    <button data-sort="strokes">画数順</button>
+    <span id="count"></span>
+  </div>
+  {chips}
 </div>
-{chips}
 <main>
 <table>
 <colgroup><col class="c-g"><col class="c-id"><col class="c-src"><col></colgroup>
