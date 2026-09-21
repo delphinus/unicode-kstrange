@@ -1,5 +1,5 @@
-# kanji.delphinus.dev に並べる一覧。ハブ (docs/index.html) と、
-# 各ページ上部の切り替えの両方がこれを読む。
+# サイトに並べる一覧。ハブ (docs/index.html) と、各ページ上部の切り替えの
+# 両方がこれを読む。
 #
 #   slug   出力先 docs/<slug>/index.html と URL /<slug>/
 #   title  見出し
