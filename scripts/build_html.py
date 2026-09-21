@@ -10,8 +10,9 @@ import json
 import pathlib
 import re
 
-from common import (CACHE, DATA, DOCS, UNICODE_VERSION, UTN43_REVISION, blocks,
-                    log, manifest, targets, toml, unihan, usource)
+from common import (CACHE, DATA, DOCS, GLYPHS, UNICODE_VERSION, UTN43_REVISION,
+                    blocks, log, manifest, needs_glyph, targets, toml, unihan,
+                    usource)
 
 # 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
 # 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
@@ -144,9 +145,11 @@ class Builder:
                 links = " / ".join(a(l["url"], l["label"]) for l in b["links"])
                 out.append(f'<li>{b["title"]}{e.get("pages", "")} — {links}</li>')
                 continue
-            body = e["text"]
+            # data/ の記述は HTML 断片を書いてよいことにしてあるので、
+            # エスケープはせず、字形の差し替えだけを掛ける
+            body = self.glyphs(e["text"], escape=False)
             if "url" in e:
-                body = a(e["url"], f'{e["text"]} {e.get("label", "")}'.strip())
+                body = a(e["url"], f'{body} {e.get("label", "")}'.strip())
                 if e.get("extra"):
                     body += f' ({html.escape(e["extra"])})'
                 if e.get("url2"):
@@ -154,6 +157,24 @@ class Builder:
             if e.get("nolink"):
                 body += f' <span class="nolink">— {html.escape(e["nolink"])}</span>'
             out.append(f"<li>{body}</li>")
+        return "".join(out)
+
+    # -- 本文中の字形 --------------------------------------------------------
+    def glyphs(self, text, escape=True):
+        """フォントが無いと豆腐になる字を GlyphWiki の SVG に差し替える。
+
+        表の左端と同じ理屈。字義の中に出てくる字も拡張 B より後のものが多く、
+        macOS の標準フォントでは読めない。字そのものは目に見えない形で残すので、
+        コピーしても検索しても字が落ちない。
+        """
+        out = []
+        for ch in text:
+            h = f"{ord(ch):x}"
+            if needs_glyph(ch) and (GLYPHS / f"u{h}.svg").exists():
+                out.append(f'<img class="ig" src="glyphs/u{h}.svg" alt="">'
+                           f'<span class="sr">{html.escape(ch)}</span>')
+            else:
+                out.append(html.escape(ch) if escape else ch)
         return "".join(out)
 
     # -- zi.tools の字義 -----------------------------------------------------
@@ -179,13 +200,13 @@ class Builder:
             return ""
         out = []
         for r in rows:
-            body = html.escape(r["def"])
+            body = self.glyphs(r["def"])
             ja = self.zi_ja(r["def"])
             if ja:
-                body += f'<span class="ja">{html.escape(ja)}</span>'
+                body += f'<span class="ja">{self.glyphs(ja)}</span>'
             body += f'<span class="zisrc">{html.escape(self.zi_source(r["src"]))}</span>'
             if r.get("note"):
-                body += f'<div class="zinote">{html.escape(r["note"])}</div>'
+                body += f'<div class="zinote">{self.glyphs(r["note"])}</div>'
             out.append(f"<li>{body}</li>")
         return ('<div class="h">字義 (zi.tools)</div>'
                 f'<ul class="zi">{"".join(out)}</ul>')
@@ -200,8 +221,8 @@ class Builder:
         head = f'{sid} / {doc} <span class="sub">({r["ws"]})</span>'
         body = ""
         if r.get("note"):
-            body += f'<p>{html.escape(r["note"])}</p>'
-        ev = "".join(f"<li>{html.escape(e)}</li>" for e in r.get("evidence", []))
+            body += f'<p>{self.glyphs(r["note"])}</p>'
+        ev = "".join(f"<li>{self.glyphs(e)}</li>" for e in r.get("evidence", []))
         if ev:
             body += f'<ul class="ev">{ev}</ul>'
         if r.get("fig"):
@@ -287,7 +308,8 @@ class Builder:
             if n.get("doc_suffix"):
                 head += " " + n["doc_suffix"]
             ev = self.evidence_html(n.get("evidence", []))
-            note = (f'<div class="note"><b>{head}</b><p>{n["text"].strip()}</p>'
+            body = self.glyphs(n["text"].strip(), escape=False)
+            note = (f'<div class="note"><b>{head}</b><p>{body}</p>'
                     + (f'<ul class="ev">{ev}</ul>' if ev else "") + "</div>")
         else:
             # 手で書いたメモが無い字は、提出文書の表と USourceData.txt から組み立てる
@@ -432,6 +454,12 @@ code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:#
         padding:.05rem .25rem; border-radius:3px }}
 .virt {{ color:#a33; font-size:.75rem }}
 .nolink {{ color:#999; font-size:.78rem }}
+/* 本文中に埋める字形。フォントが持っていない字の代わりなので、前後の文字と
+   同じ大きさに合わせる */
+img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
+/* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
+.sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
+       clip-path:inset(50%); white-space:nowrap }}
 ul.zi {{ margin:0 0 .7rem; padding-left:1.1rem }}
 ul.zi li {{ margin-bottom:.35rem; font-size:.8rem }}
 .ja {{ color:#1a1a1a }} .ja::before {{ content:" — "; color:var(--muted) }}
@@ -454,7 +482,9 @@ footer ul {{ padding-left:1.2rem }}
 <h1>{title} — 出典一覧</h1>
 <p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
 {count} 字について、字形と出典をまとめたもの。🔎 が付いたリンクは原典の該当箇所。
-字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。</p>
+字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。字義や用例の
+<b>文中</b>に出てくる拡張 A 以降の字も同じく SVG に差し替えてある (選択してコピーすれば
+字のまま取れる)。</p>
 <p class="meta">Unicode {uv} / UTN #43 ({utn}) &nbsp;·&nbsp; 入力の SHA-256: {hashes}
 &nbsp;·&nbsp; 生成 {now} &nbsp;·&nbsp;
 <a href="https://github.com/delphinus/unicode-kstrange">生成スクリプト</a></p>

@@ -120,3 +120,26 @@ def usource() -> dict[str, dict]:
 
 def toml(name: str) -> dict:
     return tomllib.loads((DATA / name).read_text(encoding="utf-8"))
+
+
+# ---- 字形 ----------------------------------------------------------------
+def needs_glyph(ch: str) -> bool:
+    """この字はフォントが無くて豆腐になりうるか。
+
+    基本ブロック (URO) の字はどの環境にもあるが、拡張 A 以降は無いことが多い。
+    macOS の標準フォントは拡張 B より後をほとんど持っていない。当たった字は
+    GlyphWiki の SVG に差し替えて出す。
+    """
+    n = ord(ch)
+    return 0x3400 <= n <= 0x4DBF or 0x20000 <= n <= 0x3FFFF
+
+
+def mentioned(texts) -> list[str]:
+    """本文中に出てくる、字形が要る字を U+XXXX の形で返す。
+
+    表の左端に出す 828 字のほかに、字義や用例の**文中**に出てくる字がある。
+    そちらもフォントが無ければ読めないので、同じように SVG を用意する。
+    """
+    chars = {ch for t in texts if t for ch in t if needs_glyph(ch)}
+    return sorted((f"U+{ord(c):04X}" for c in chars),
+                  key=lambda x: int(x[2:], 16))

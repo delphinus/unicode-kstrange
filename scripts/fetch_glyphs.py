@@ -8,13 +8,34 @@ GlyphWiki のグリフデータは「あらゆる改変の有無に関わらず�
     python3 scripts/fetch_glyphs.py [--category S|all] [--force]
 """
 import argparse
+import json
 import time
 import urllib.error
 import urllib.request
 
-from common import GLYPHS, UA, log, targets, unihan
+from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, targets, toml,
+                    unihan)
 
 URL = "https://glyphwiki.org/glyph/u{hex}.svg"
+
+
+def texts_in_page():
+    """生成物の本文に出てくる文字列。ここから字形が要る字を拾う。"""
+    out = []
+    p = CACHE / "zi_tools.json"
+    if p.exists():
+        for rows in json.loads(p.read_text(encoding="utf-8")).values():
+            out += [r.get("def") for r in rows] + [r.get("note") for r in rows]
+    p = CACHE / "uk_source.json"
+    if p.exists():
+        for r in json.loads(p.read_text(encoding="utf-8")).values():
+            out += r.get("evidence", []) + [r.get("note")]
+    if (DATA / "zi_tools_ja.toml").exists():
+        out += list(toml("zi_tools_ja.toml")["ja"].values())
+    for n in toml("notes.toml").values():
+        out.append(n.get("text"))
+        out += [e.get("text", "") for e in n.get("evidence", [])]
+    return out
 
 
 def main():
@@ -27,8 +48,13 @@ def main():
     GLYPHS.mkdir(parents=True, exist_ok=True)
     cps = targets(unihan(), args.category)
     log(f"カテゴリ {args.category}: {len(cps)} 字")
+    extra = [c for c in mentioned(texts_in_page()) if c not in set(cps)]
+    if extra:
+        log(f"本文中に出てくる字 (表の対象外): {len(extra)} 字")
+        cps = cps + extra
 
-    got = skipped = failed = 0
+    got = skipped = 0
+    failed = []
     for cp in cps:
         h = cp[2:].lower()
         dest = GLYPHS / f"u{h}.svg"
@@ -42,17 +68,19 @@ def main():
                 body = r.read()
         except urllib.error.HTTPError as e:
             log(f"  {cp} 取得できず ({e.code})")
-            failed += 1
+            failed.append(cp)
             continue
         if not body.lstrip().startswith(b"<svg"):
             log(f"  {cp} SVG ではない応答")
-            failed += 1
+            failed.append(cp)
             continue
         dest.write_bytes(body)
         got += 1
         time.sleep(args.sleep)
-    log(f"取得 {got} / 既存 {skipped} / 失敗 {failed}")
-    if failed:
+    log(f"取得 {got} / 既存 {skipped} / 失敗 {len(failed)}")
+    # 表に出す字が欠けるのは困るが、文中に出てくるだけの字は素のテキストで出せば
+    # 済む (GlyphWiki に無い新しい字がある)。落とすのは前者のときだけ。
+    if set(failed) - set(extra):
         raise SystemExit(1)
 
 
