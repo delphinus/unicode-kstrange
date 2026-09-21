@@ -5,6 +5,15 @@ cache/
 # Unicode の Terms of Use により公衆への再配布はできないので、リポジトリには入れない
 docs/glyphs-utn43/
 
+# 生成物。zi.tools から取った字義を含んでいて、zi.tools は利用条件を公開していない。
+# 再配布の可否を確かめられないので、公開するリポジトリには置かない。
+# make html で作り直せる。
+docs/index.html
+
+# zi.tools の字義の訳語表。キーが原文そのものなので、上と同じ理由で置かない。
+# 手書きの資産なので、消さないこと (リポジトリの外でバックアップする)。
+data/zi_tools_ja.toml
+
 .DS_Store
 __pycache__/
 *.pyc

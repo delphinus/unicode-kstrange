@@ -10,8 +10,8 @@ import json
 import pathlib
 import re
 
-from common import (CACHE, DOCS, UNICODE_VERSION, UTN43_REVISION, blocks, log,
-                    manifest, targets, toml, unihan, usource)
+from common import (CACHE, DATA, DOCS, UNICODE_VERSION, UTN43_REVISION, blocks,
+                    log, manifest, targets, toml, unihan, usource)
 
 # 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
 # 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
@@ -23,12 +23,18 @@ ZITOOLS = "https://zi.tools/zi/{enc}"
 ZDIC = "https://www.zdic.net/hans/{enc}"
 GLYPHWIKI = "https://glyphwiki.org/wiki/u{lhex}"
 WIKTIONARY = "https://en.wiktionary.org/wiki/{enc}"
+UKDOC = "https://github.com/unicode-org/uk-source-ideographs/blob/main/{doc}.pdf"
 
 BLOCK_JA = {"CJK Unified Ideographs": "基本ブロック (URO)"}
 for x in "ABCDEFGHIJ":
     BLOCK_JA[f"CJK Unified Ideographs Extension {x}"] = f"拡張 {x}"
 
 VIRT = ' <span class="virt">(仮想位置 — その字書には載っていない)</span>'
+
+# zi.tools の字義の半分近くが「同=X」「同「X」」「同=X(Y)」の形をしている。
+# 訳語表に 1 件ずつ書く意味が無いので、ここで機械的に訳す。空白が入るものは
+# 「同=X <語釈>」のように語釈が続いているので、訳語表のほうで訳す。
+SAME_AS = re.compile(r"同[=「]([^」\s]+)」?")
 
 
 def a(url, text):
@@ -49,12 +55,30 @@ class Builder:
         self.srcmap = toml("irg_sources.toml")["prefix"]
         self.books = toml("books.toml")
         self.notes = toml("notes.toml")
+        self.utags = toml("usource_tags.toml")["tag"]
+        self.zisrc = toml("zi_tools_sources.toml")["tag"]
+        # 字義の訳語表はリポジトリに入れていない (.gitignore に理由がある)。
+        # 無ければ字義を原文のまま出す。
+        self.zija = (toml("zi_tools_ja.toml")["ja"]
+                     if (DATA / "zi_tools_ja.toml").exists() else {})
+        if not self.zija:
+            log("  data/zi_tools_ja.toml が無いので字義は原文のまま出す")
         self.prefixes = sorted(self.srcmap, key=len, reverse=True)
         # 英語版 Wiktionary に項目がある字 (fetch_wiktionary.py が作る)
         wk = CACHE / "wiktionary.json"
         self.wiktionary = json.loads(wk.read_text()) if wk.exists() else {}
         if not self.wiktionary:
             log("  cache/wiktionary.json が無いので Wiktionary のリンクは付けない")
+        self.uk = self.cache_json("uk_source.json", "UK-source の用例")
+        self.l2 = self.cache_json("l2docs.json", "UTC 文書の題名")
+        self.zi = self.cache_json("zi_tools.json", "zi.tools の字義")
+
+    def cache_json(self, name, what):
+        p = CACHE / name
+        if not p.exists():
+            log(f"  cache/{name} が無いので{what}は出さない")
+            return {}
+        return json.loads(p.read_text(encoding="utf-8"))
 
     # -- 小物 ---------------------------------------------------------------
     def block_of(self, cp):
@@ -132,6 +156,97 @@ class Builder:
             out.append(f"<li>{body}</li>")
         return "".join(out)
 
+    # -- zi.tools の字義 -----------------------------------------------------
+    def zi_ja(self, text):
+        """字義の日本語訳。「同=X」「同「X」」だけは数が多いので機械的に訳す。"""
+        if text in self.zija:
+            return self.zija[text]
+        m = SAME_AS.fullmatch(text)
+        return f"「{m[1]}」に同じ" if m else ""
+
+    def zi_source(self, tag):
+        """zi.tools の出典タグ → 出典名。IRG のソース接頭辞と重なるものが多い。"""
+        if tag in self.zisrc:
+            return self.zisrc[tag]
+        for p in self.prefixes:
+            if tag.startswith(p):
+                return self.srcmap[p]
+        return tag
+
+    def zi_html(self, cp):
+        rows = [r for r in self.zi.get(cp, []) if r.get("def")]
+        if not rows:
+            return ""
+        out = []
+        for r in rows:
+            body = html.escape(r["def"])
+            ja = self.zi_ja(r["def"])
+            if ja:
+                body += f'<span class="ja">{html.escape(ja)}</span>'
+            body += f'<span class="zisrc">{html.escape(self.zi_source(r["src"]))}</span>'
+            if r.get("note"):
+                body += f'<div class="zinote">{html.escape(r["note"])}</div>'
+            out.append(f"<li>{body}</li>")
+        return ('<div class="h">字義 (zi.tools)</div>'
+                f'<ul class="zi">{"".join(out)}</ul>')
+
+    # -- 提案文書の自動展開 --------------------------------------------------
+    def uk_note(self, sid):
+        """UK-source の提出文書 (の添付表) から用例証拠を組み立てる。"""
+        r = self.uk.get(sid)
+        if not r:
+            return ""
+        doc = a(UKDOC.format(doc=r["doc"].replace(" ", "")), r["doc"])
+        head = f'{sid} / {doc} <span class="sub">({r["ws"]})</span>'
+        body = ""
+        if r.get("note"):
+            body += f'<p>{html.escape(r["note"])}</p>'
+        ev = "".join(f"<li>{html.escape(e)}</li>" for e in r.get("evidence", []))
+        if ev:
+            body += f'<ul class="ev">{ev}</ul>'
+        if r.get("fig"):
+            body += (f'<p class="fig">証拠画像: {html.escape(r["fig"])}</p>')
+        return f'<div class="note"><b>{head}</b>{body}</div>'
+
+    def u_note(self, sid):
+        """U-source の出典欄 (USourceData.txt) を読める形にする。"""
+        d = self.usrc.get(sid)
+        if not d:
+            return ""
+        items, docs = [], []
+        for part in re.split(r"[*;]", d.get("sources") or ""):
+            part = part.strip()
+            if not part:
+                continue
+            tag, _, idx = part.partition(" ")
+            if tag == "UTCDoc":
+                num = idx.split()[0] if idx else ""
+                doc = self.l2.get(num)
+                nth = idx.split()[1:] if idx else []
+                where = f" (文書内 {nth[0]} 番目の字)" if nth else ""
+                if doc:
+                    docs.append(
+                        f'{a(doc["url"], num)} {html.escape(doc["author"])}'
+                        f'「{html.escape(doc["title"])}」({doc["date"]}){where}')
+                else:
+                    docs.append(f"UTC 文書 {html.escape(num)}{where}")
+            elif tag.startswith("http"):
+                items.append(a(part.split()[0], html.escape(part.split()[0]))
+                             + (f" ({idx.split()[-1]} 時点)" if idx else ""))
+            else:
+                name = self.utags.get(tag, tag)
+                items.append(html.escape(name)
+                             + (f" — {html.escape(idx)}" if idx else ""))
+        if not (items or docs):
+            return ""
+        body = "".join(f"<p>{d_}</p>" for d_ in docs)
+        if d.get("comment"):
+            body += f'<p>コメント欄: {html.escape(d["comment"])}</p>'
+        if items:
+            body += ('<ul class="ev">'
+                     + "".join(f"<li>{i}</li>" for i in items) + "</ul>")
+        return f'<div class="note"><b>{sid}</b>{body}</div>'
+
     # -- 1 字ぶん -----------------------------------------------------------
     def row(self, cp):
         v = self.uni[cp]
@@ -175,16 +290,22 @@ class Builder:
             note = (f'<div class="note"><b>{head}</b><p>{n["text"].strip()}</p>'
                     + (f'<ul class="ev">{ev}</ul>' if ev else "") + "</div>")
         else:
-            note = '<span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span>'
+            # 手で書いたメモが無い字は、提出文書の表と USourceData.txt から組み立てる
+            note = (self.uk_note(v.get("kIRG_UKSource", ""))
+                    or self.u_note(v.get("kIRG_USource", ""))
+                    or '<span class="none">提案文書まで遡っていない '
+                       "(字書・規格の記載のみ)</span>")
 
         cats = "".join(
             f'<span class="cat" title="{html.escape(self.cats.get(c.split(":")[0], ""))}">'
             f"{html.escape(c)}</span>" for c in v["kStrange"].split())
 
+        zi = self.zi_html(cp)
         search = " ".join([cp, self.block_of(cp), v["kTotalStrokes"],
                            v.get("kDefinition", ""), v.get("kJapanese", ""),
                            v.get("kMandarin", ""), v.get("kStrange", ""),
                            re.sub("<[^>]+>", " ", cites),
+                           re.sub("<[^>]+>", " ", zi),
                            re.sub("<[^>]+>", " ", note)]).lower()
 
         catkeys = " ".join(sorted({c.split(":")[0] for c in v["kStrange"].split()}))
@@ -203,6 +324,7 @@ class Builder:
   <td class="src">
     <div class="h">IRG ソース参照</div><ul>{cites}</ul>
     <div class="h">字書索引</div><ul>{dicts}</ul>
+    {zi}
   </td>
   <td class="ev">{note}</td>
 </tr>"""
@@ -222,8 +344,22 @@ class Builder:
         return f'<div class="chips">{"".join(chips)}</div>'
 
     # -- 全体 ---------------------------------------------------------------
+    def untranslated(self, cps):
+        """訳語表に載っていない字義。取り直したあと足すべきものが分かる。
+
+        1 文字だけのものは数えない (zi.tools には字義が「@」だけの行がある)。
+        """
+        return sorted({r["def"] for cp in cps for r in self.zi.get(cp, [])
+                       if r.get("def") and len(r["def"]) > 1
+                       and not self.zi_ja(r["def"])})
+
     def build(self):
         cps = targets(self.uni, self.category)
+        if self.zi:
+            miss = self.untranslated(cps)
+            if miss:
+                log(f"  訳の無い字義が {len(miss)} 件ある "
+                    f"(data/zi_tools_ja.toml に足す): {miss[0]}")
         rows = "".join(self.row(cp) for cp in cps)
         chips = self.filter_bar(cps)
         m = manifest()
@@ -296,6 +432,13 @@ code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:#
         padding:.05rem .25rem; border-radius:3px }}
 .virt {{ color:#a33; font-size:.75rem }}
 .nolink {{ color:#999; font-size:.78rem }}
+ul.zi {{ margin:0 0 .7rem; padding-left:1.1rem }}
+ul.zi li {{ margin-bottom:.35rem; font-size:.8rem }}
+.ja {{ color:#1a1a1a }} .ja::before {{ content:" — "; color:var(--muted) }}
+.zisrc {{ color:var(--muted); font-size:.75rem }}
+.zisrc::before {{ content:" / " }}
+.zinote {{ color:var(--muted); font-size:.74rem; line-height:1.5 }}
+.fig {{ color:var(--muted); font-size:.75rem; margin:.2rem 0 0 }}
 .note {{ border-left:3px solid var(--accent); padding:.1rem 0 .1rem .7rem }}
 .note b {{ font-size:.8rem }} .note p {{ margin:.2rem 0 .4rem; font-size:.83rem }}
 ul.ev {{ margin:.2rem 0 0; padding-left:1.1rem }}
@@ -338,11 +481,17 @@ footer ul {{ padding-left:1.2rem }}
 ページ番号がそのまま画像の番号に対応するが、画像は外部からのリンクを弾く設定なので、
 検索ページのほうを指している。<code>kKangXi</code> の末尾が 0 以外の字は康熙字典に実在せず
 検索にも出てこないため、リンクを張っていない。</li>
-<li><b>zi.tools (字統網)</b> — IRG のソース参照・字形の分解・異体字に加えて、字義に出典のタグが付く。
-ここだけで用例の当たりが付くことがある。</li>
+<li><b>zi.tools (字統網)</b> — 字義を出典タグ付きで載せている。この表の「字義」はその API
+(<code>/api/zi/&lt;字&gt;</code>) から取ったもので、原文の下に日本語訳を添えてある
+(訳は <code>data/zi_tools_ja.toml</code>、「同=X」の形だけは機械的に訳している)。
+zi.tools の編集部が付けた字義には典拠の論文・字書が併記されていることがあり、
+それも一緒に出している。</li>
 <li><b>漢典 (zdic.net)</b> — 拡張 J の字でも引ける。読み・意味・部首はここが手早い。</li>
 <li><b>文字情報基盤 (MJ)</b>・<b>Wiktionary</b>・<b>GlyphWiki</b> — 字ごとのページ。</li>
-<li><b>提案文書</b> — UTC 文書 (L2/…) と英国の IRG 提出文書は PDF が公開されている。用例の図版はこの中。</li>
+<li><b>提案文書</b> — UTC 文書 (L2/…) と英国の IRG 提出文書は PDF が公開されている。用例の図版はこの中。
+UK-source の 3 通の提出文書は字ごとの一覧を Excel で抱えているので、
+「どの本の何ページに出てくる字か」まで機械的に取り出せる。右端の列はそれを展開したもので、
+手で書き起こしたメモがある字ではそちらを優先している。</li>
 <li><b>書籍</b> — Amazon と国立国会図書館サーチ。ISBN の無い古い本は検索リンク。</li>
 </ul>
 <h2>リンクを付けられなかったもの</h2>

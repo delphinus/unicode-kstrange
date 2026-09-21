@@ -2,9 +2,10 @@ CATEGORY ?= S
 PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
-.PHONY: all fetch glyphs html check check-links check-utn43 clean distclean
+.PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
+        check check-links check-utn43 clean distclean
 
-all: fetch glyphs wiktionary html
+all: fetch glyphs wiktionary zi-tools uk-source l2docs html
 
 ## 入力データ (Unihan ほか) を cache/ へ取得し、版とハッシュを記録する
 fetch:
@@ -17,6 +18,18 @@ glyphs:
 ## 英語版 Wiktionary に項目がある字を調べて cache/ に残す
 wiktionary:
 	$(SCRIPTS) scripts/fetch_wiktionary.py --category $(CATEGORY)
+
+## zi.tools の字義と、その典拠になっている字書・論文を cache/ に残す
+zi-tools:
+	$(SCRIPTS) scripts/fetch_zi_tools.py --category $(CATEGORY)
+
+## UK-source の提出文書 (の添付表) から字ごとの用例証拠を cache/ に残す
+uk-source:
+	$(SCRIPTS) scripts/fetch_uk_source.py
+
+## USourceData.txt が挙げる UTC 文書の題名と PDF の URL を cache/ に残す
+l2docs:
+	$(SCRIPTS) scripts/fetch_l2docs.py --category $(CATEGORY)
 
 ## docs/index.html を組み立てる
 html:

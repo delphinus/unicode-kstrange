@@ -1,0 +1,29 @@
+# USourceData.txt の出典タグ → 書誌。UAX #45 の "The Source Field" の表と、
+# Unihan のプロパティ名で書かれているものは UAX #38 の書誌一覧に基づく。
+#
+# UTCDoc は文書番号を cache/l2docs.json (fetch_l2docs.py が作る) で題名・PDF に
+# 開くので、ここには置いていない。URI がそのまま出典になっている字もある。
+
+[tag]
+# --- UAX #45 が定義するタグ ---
+ABC2 = "John DeFrancis 編『ABC Chinese-English Dictionary』(ハワイ大学出版局, 1999)"
+"Adobe-CNS1" = "Adobe-CNS1 字形コレクション (値はグリフ番号)"
+"Adobe-Japan1" = "Adobe-Japan1 字形コレクション (値はグリフ番号)"
+Cheng = "鄭作新編『A complete checklist of species and subspecies of the Chinese birds』(科学出版社, 2000)"
+CN = "Vũ Văn Kính 編『Đại Tự Điển Chữ Nôm』(文芸出版社, 1998) — チュノムの大字典"
+DYC = "《說文解字注》— 許慎《說文解字》(121) に段玉裁が付けた注 (1815)。上海古籍出版社 1981 年版"
+"GB18030-2000" = "GB 18030-2000"
+LDS = "末日聖徒イエス・キリスト教会が提出した必須文字表"
+Shangwu = "黄港生編《商務新詞典》(商務印書館香港, 1991)"
+TUS = "Unicode 標準そのもの (値はコードポイント)"
+UDR = "Unicode 標準への障害報告、または Unicode 編集委員会への直接の連絡"
+WG2 = "ISO/IEC JTC1/SC2/WG2 の文書 (値は文書番号)"
+WL = "Wenlin 3.1.8 (値は私用領域のコードポイント)"
+XHC = "中国社会科学院語言研究所詞典編輯室編《現代漢語詞典》(商務印書館)"
+
+# --- Unihan のプロパティ名がそのままタグになっているもの (UAX #38 の書誌) ---
+kCheungBauerIndex = "Cheung Kwan-hin・Robert S. Bauer『The Representation of Cantonese with Chinese Characters』(Journal of Chinese Linguistics Monograph Series 18, 2002)"
+kCihaiT = "《辭海》単巻版 (香港中華書局, 1983 — 1947 年版の復刻)"
+kCowles = "Roy T. Cowles『A Pocket Dictionary of Cantonese』(香港大学出版局, 1999)"
+kHanYu = "《漢語大字典》(四川辞書出版社・湖北辞書出版社, 1986-1990)"
+kMeyerWempe = "Bernard F. Meyer・Theodore F. Wempe『The Student's Cantonese-English Dictionary』(Catholic Foreign Mission Society of America, 1947)"

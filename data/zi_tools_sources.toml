@@ -1,0 +1,25 @@
+# zi.tools の字義に付く出典タグ → 出典名。
+#
+# zi.tools は IRG のソース参照の接頭辞をそのまま流用しているものが多いので、
+# ここに無いタグは data/irg_sources.toml の最長一致で引く。ここに書くのは
+#   (1) IRG に無い zi.tools 独自のタグ
+#   (2) IRG の接頭辞と紛らわしく、最長一致を間違えるもの (GKX を GK と読むなど)
+# の 2 つ。
+#
+# 引けなかったタグは、そのままの文字列で出る。GHZH と FANGYAN がそれで、
+# 前者は 6 桁の通し番号を持つ字書、後者は方言の調査資料だが、
+# zi.tools 側にタグの一覧が無く、何の略かを確かめられなかった。
+
+[tag]
+# --- IRG の接頭辞と紛らわしいもの ---
+GKX = "康熙字典"                                    # GK (GB/T 12052-1989) ではない
+
+# --- zi.tools 独自 ---
+ZITOOLS = "zi.tools 編集部 (典拠は右に併記)"
+BOUYEI = "布依文 (布依語を漢字で書いたもの)"
+CHEUNGBAUER = "Cheung Kwan-hin・Robert S. Bauer『The Representation of Cantonese with Chinese Characters』(2002)"
+VTDCNDG = "《字典喃引解》(Tự Điển Chữ Nôm Dẫn Giải) — 越南の字喃辞典"
+WASEIKANJI = "和製漢字の辞典"
+FANGYAN = "漢語方言の調査資料 (どの方言かは字義の文中にある)"
+UCV = "IRG の UCV (Unifiable Component Variation) 表"
+G_2J = "第二次漢字簡化方案 (二簡字, 1977 — 1986 年に廃止)"
