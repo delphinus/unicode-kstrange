@@ -9,6 +9,8 @@ docs/glyphs-utn43/
 # 再配布の可否を確かめられないので、公開するリポジトリには置かない。
 # make html で作り直せる。
 docs/index.html
+docs/*/index.html
+docs/*/meta.json
 
 # zi.tools の字義の訳語表。キーが原文そのものなので、上と同じ理由で置かない。
 # 手書きの資産なので、消さないこと (リポジトリの外でバックアップする)。

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""kStrange の字の出典一覧 (docs/index.html) を組み立てる。
+"""字の出典一覧 (docs/<slug>/index.html) を組み立てる。
 
-    python3 scripts/build_html.py [--category S|all] [--out docs/index.html]
+    python3 scripts/build_html.py [--category S|all] [--slug kstrange]
+
+出力は docs/<slug>/ の下。字形は docs/glyphs/ に置いて全コレクションで共有するので、
+ページからは ../glyphs/ で参照する。並びは data/collections.toml。
 """
 import argparse
 import datetime
@@ -48,7 +51,7 @@ REF = re.compile(f"「({HAN})」|=({HAN})(?!{HAN})")
 # それぞれ見出しを持たせてある (<thead> が消えても何の欄か分かるように)。
 TR = """
 <tr data-search="{search}" data-strokes="{strokes}" data-cp="{n}" data-cats="{catkeys}">
-  <td class="g"><img src="glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
+  <td class="g"><img src="../glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
   <td class="id">
     <div class="cp">{cp}</div>
     <div class="sub">{block} · {strokes_txt} 画</div>
@@ -78,8 +81,9 @@ def pct(ch):
 
 
 class Builder:
-    def __init__(self, category):
+    def __init__(self, category, slug="kstrange"):
         self.category = category
+        self.slug = slug
         self.uni = unihan()
         self.blocks = blocks()
         self.usrc = usource()
@@ -232,7 +236,7 @@ class Builder:
                 out.append(self.zi_link(ch, html.escape(ch)))
                 continue
             if needs_glyph(ch) and (GLYPHS / f"u{h}.svg").exists():
-                g = (f'<img class="ig" src="glyphs/u{h}.svg" alt="">'
+                g = (f'<img class="ig" src="../glyphs/u{h}.svg" alt="">'
                      f'<span class="sr">{html.escape(ch)}</span>')
                 out.append(self.zi_link(ch, g, "igl") if link else g)
             else:
@@ -442,6 +446,20 @@ class Builder:
         return sorted({r["def"] for cp in cps for r in self.zi.get(cp, [])
                        if r.get("def") and not self.zi_ja(r["def"])})
 
+    def nav_html(self):
+        """ハブと他のコレクションへの行。切り替えは頻繁ではないので貼り付けない。"""
+        out = ['<a href="../">漢字</a>']
+        for c in toml("collections.toml")["collection"]:
+            t = html.escape(c["title"])
+            if c["slug"] == self.slug:
+                out.append(f"<b>{t}</b>")
+            elif (DOCS / c["slug"] / "meta.json").exists():
+                out.append(a(f'../{c["slug"]}/', t))
+            else:
+                # まだ作っていないものはリンクにしない (404 になる)
+                out.append(f'<span class="soon">{t}</span>')
+        return " · ".join(out)
+
     def build(self):
         cps = targets(self.uni, self.category)
         if self.zi:
@@ -461,7 +479,9 @@ class Builder:
         catname = self.cats.get(self.category, "")
         catname = f" ({html.escape(catname)})" if catname else""
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        return TEMPLATE.format(title=title, catname=catname,
+        self.count = len(cps)
+        self.page_title = title
+        return TEMPLATE.format(title=title, catname=catname, nav=self.nav_html(),
                                count=len(cps), rows=rows, now=now, chips=chips,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
@@ -502,7 +522,10 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 * {{ box-sizing:border-box }}
 body {{ margin:0; padding:0 0 4rem; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
         line-height:1.7; color:var(--text); background:var(--bg) }}
-header {{ padding:2rem 2rem 1rem; max-width:1500px; margin:0 auto }}
+header {{ padding:1.2rem 2rem 1rem; max-width:1500px; margin:0 auto }}
+.nav {{ font-size:.82rem; color:var(--muted); margin-bottom:.8rem }}
+.nav b {{ color:var(--text) }}
+.nav .soon {{ opacity:.5 }}
 h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
 .lead {{ color:var(--muted); max-width:72ch; font-size:.92rem }}
 .meta {{ font-size:.8rem; color:var(--muted); margin-top:.8rem }}
@@ -560,7 +583,7 @@ code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:v
 /* 本文中に埋める字形。フォントが持っていない字の代わりなので、前後の文字と
    同じ大きさに合わせる。
    CSS mask にして currentColor で塗る手もあるが、mask 画像は CORS の対象で
-   file:// から開くと読み込みに失敗し、字形が消える。手元で open docs/index.html
+   file:// から開くと読み込みに失敗し、字形が消える。手元で open docs/<slug>/index.html
    する使い方があるので <img> のままにして、暗い配色では反転させる */
 img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
 @media (prefers-color-scheme: dark) {{ img.ig {{ filter:invert(1) }} }}
@@ -603,7 +626,8 @@ details.dt > summary {{ display:none }}
    4 列の表は幅 1,500px 前提で、スマホでは潰れて読めない。
    表を崩して 1 字 1 枚のカードにし、出典は畳んでおく。 */
 @media (max-width: 900px) {{
-  header {{ padding:1.2rem 1rem .6rem }}
+  header {{ padding:.9rem 1rem .6rem }}
+  .nav {{ margin-bottom:.5rem }}
   h1 {{ font-size:1.25rem }}
   .bar {{ padding:.6rem 1rem }}
   .ctl {{ gap:.5rem }}
@@ -654,6 +678,7 @@ details.dt > summary {{ display:none }}
 }}
 </style></head><body>
 <header>
+<nav class="nav">{nav}</nav>
 <h1>{title} — 出典一覧</h1>
 <details class="dt intro" open><summary>このページについて</summary>
 <p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
@@ -842,13 +867,19 @@ restore();
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--category", default="S")
-    ap.add_argument("--out", default=str(DOCS / "index.html"))
+    ap.add_argument("--slug", default="kstrange")
+    ap.add_argument("--out", help="既定は docs/<slug>/index.html")
     args = ap.parse_args()
 
-    out = pathlib.Path(args.out)
+    out = pathlib.Path(args.out or DOCS / args.slug / "index.html")
     out.parent.mkdir(parents=True, exist_ok=True)
-    doc = Builder(args.category).build()
-    out.write_text(doc, encoding="utf-8")
+    b = Builder(args.category, args.slug)
+    out.write_text(b.build(), encoding="utf-8")
+    # ハブはこれを読んで件数を出す。数え方を 2 か所に持たないため
+    (out.parent / "meta.json").write_text(json.dumps(
+        {"title": b.page_title, "count": b.count,
+         "generated": datetime.datetime.now().isoformat(timespec="minutes")},
+        ensure_ascii=False), encoding="utf-8")
     log(f"{out} を書いた ({out.stat().st_size / 1024:.0f} KB)")
 
 

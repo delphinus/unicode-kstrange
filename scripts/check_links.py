@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """生成した HTML の中のリンクを全部叩いて、開けないものを一覧にする。
 
-    python3 scripts/check_links.py [docs/index.html]
+    python3 scripts/check_links.py [docs/kstrange/index.html]
 
 ボット検証を置いているホスト (GlyphWiki, Amazon, GitHub) は、スクリプトから叩くと
 403 / 429 / 503 を返す。リンク先が失われたわけではないので「確認できず」として分けて数え、
@@ -62,7 +62,7 @@ def gated(url, code):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default=str(DOCS / "index.html"))
+    ap.add_argument("path", nargs="?", default=str(DOCS / "kstrange" / "index.html"))
     ap.add_argument("--sample", type=int, default=0,
                     help="ホストごとにこの本数だけ確認する (0 なら全部)")
     ap.add_argument("--seed", type=int, default=0)

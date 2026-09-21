@@ -1,0 +1,29 @@
+# kanji.delphinus.dev に並べる一覧。ハブ (docs/index.html) と、
+# 各ページ上部の切り替えの両方がこれを読む。
+#
+#   slug   出力先 docs/<slug>/index.html と URL /<slug>/
+#   title  見出し
+#   lead   1 行の説明
+#
+# 字形 (docs/glyphs/) は全部で共有する。828 字の kStrange と 3,409 字の
+# UK-source はかなり重なるので、コレクションごとに持つと同じ SVG を何度も配ることになる。
+
+[[collection]]
+slug = "kstrange"
+title = "kStrange"
+lead = "形が非典型的だと Unicode が分類した字"
+
+[[collection]]
+slug = "uk"
+title = "UK-source"
+lead = "英国が IRG へ提出した字。用例の書名とページが提出文書に残っている"
+
+[[collection]]
+slug = "u-source"
+title = "通らなかった字"
+lead = "UAX #45 に提案されたが、却下・保留のままになっている字"
+
+[[collection]]
+slug = "spoofing"
+title = "見間違えやすい字"
+lead = "取り違えの恐れがあるとして Unicode が組で指定した字"

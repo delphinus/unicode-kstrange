@@ -1,11 +1,12 @@
 CATEGORY ?= S
+SLUG     ?= kstrange
 PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
 .PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
-        check check-links check-utn43 clean distclean
+        index check check-links check-utn43 clean distclean
 
-all: fetch glyphs wiktionary zi-tools uk-source l2docs html
+all: fetch glyphs wiktionary zi-tools uk-source l2docs html index
 
 ## 入力データ (Unihan ほか) を cache/ へ取得し、版とハッシュを記録する
 fetch:
@@ -31,9 +32,13 @@ uk-source:
 l2docs:
 	$(SCRIPTS) scripts/fetch_l2docs.py --category $(CATEGORY)
 
-## docs/index.html を組み立てる
+## docs/<slug>/index.html を組み立てる
 html:
-	$(SCRIPTS) scripts/build_html.py --category $(CATEGORY)
+	$(SCRIPTS) scripts/build_html.py --category $(CATEGORY) --slug $(SLUG)
+
+## コレクションの一覧 docs/index.html を組み立てる
+index:
+	$(SCRIPTS) scripts/build_index.py
 
 check: check-links check-utn43
 
@@ -49,7 +54,7 @@ check-utn43:
 ## 生成物を消す (取得済みの入力は残す)
 clean:
 	rm -f docs/index.html
-	rm -rf docs/glyphs
+	rm -rf docs/glyphs docs/kstrange
 
 ## 取得済みの入力も消す
 distclean: clean
