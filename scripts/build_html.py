@@ -51,7 +51,7 @@ REF = re.compile(f"「({HAN})」|=({HAN})(?!{HAN})")
 # それぞれ見出しを持たせてある (<thead> が消えても何の欄か分かるように)。
 TR = """
 <tr data-search="{search}" data-strokes="{strokes}" data-cp="{n}" data-cats="{catkeys}">
-  <td class="g"><img src="../glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
+  <td class="g">{glyph}</td>
   <td class="id">
     <div class="cp">{cp}</div>
     <div class="sub">{block} · {strokes_txt} 画</div>
@@ -84,6 +84,8 @@ class Builder:
     def __init__(self, category, slug="kstrange"):
         self.category = category
         self.slug = slug
+        self.spec = next(c for c in toml("collections.toml")["collection"]
+                         if c["slug"] == slug)
         self.uni = unihan()
         self.blocks = blocks()
         self.usrc = usource()
@@ -397,7 +399,7 @@ class Builder:
                     or '<span class="none">提案文書まで遡っていない '
                        "(字書・規格の記載のみ)</span>")
 
-        cats = "".join(self.cat_badge(c) for c in v["kStrange"].split())
+        cats = self.badges(cp)
 
         zi = self.zi_html(cp)
         summary = self.zi_summary(cp)
@@ -408,15 +410,17 @@ class Builder:
         search = " ".join([cp, self.block_of(cp), v["kTotalStrokes"],
                            v.get("kDefinition", ""), v.get("kJapanese", ""),
                            v.get("kMandarin", ""), v.get("kStrange", ""),
+                           v.get("kIRG_UKSource", ""),
                            re.sub("<[^>]+>", " ", cites),
                            re.sub("<[^>]+>", " ", zi),
                            re.sub("<[^>]+>", " ", note)]).lower()
 
-        catkeys = " ".join(sorted({c.split(":")[0] for c in v["kStrange"].split()}))
+        catkeys = " ".join(self.facets(cp))
 
         return TR.format(
             search=html.escape(search), strokes=int(v["kTotalStrokes"]),
-            n=int(cp[2:], 16), catkeys=catkeys, lhex=lhex, cp=cp,
+            n=int(cp[2:], 16), catkeys=catkeys, cp=cp,
+            glyph=self.glyph_cell(cp, lhex),
             block=self.block_of(cp), strokes_txt=v["kTotalStrokes"], cats=cats,
             readings=('<div class="rd">' + " / ".join(readings) + "</div>"
                       if readings else ""),
@@ -430,14 +434,15 @@ class Builder:
         """対象に 2 つ以上のカテゴリがあるときだけ、絞り込みのボタンを出す。"""
         counts = {}
         for cp in cps:
-            for c in {t.split(":")[0] for t in self.uni[cp]["kStrange"].split()}:
+            for c in self.facets(cp):
                 counts[c] = counts.get(c, 0) + 1
         if len(counts) < 2:
             return ""
         chips = [f'<button class="chip on" data-cat="">すべて {len(cps)}</button>']
         for c in sorted(counts, key=lambda x: -counts[x]):
             chips.append(f'<button class="chip" data-cat="{c}" '
-                         f'title="{html.escape(self.cats.get(c, ""))}">{c} {counts[c]}</button>')
+                         f'title="{html.escape(self.cats.get(c, ""))}">'
+                         f'{c} {counts[c]:,}</button>')
         return f'<div class="chips">{"".join(chips)}</div>'
 
     # -- 全体 ---------------------------------------------------------------
@@ -460,8 +465,40 @@ class Builder:
                 out.append(f'<span class="soon">{t}</span>')
         return " · ".join(out)
 
+    def select(self):
+        """このコレクションに載せる字。"""
+        if self.spec.get("select") == "uk":
+            return sorted((cp for cp in self.uni if self.uni[cp].get("kIRG_UKSource")),
+                          key=lambda x: int(x[2:], 16))
+        return targets(self.uni, self.category)
+
+    def facets(self, cp):
+        """絞り込みの分類。kStrange はカテゴリ、UK-source は提出した作業集合。"""
+        if self.spec.get("facet") == "ukdoc":
+            r = self.uk.get(self.uni[cp].get("kIRG_UKSource", "")) or {}
+            return [r["ws"].replace("IRG Working Set ", "WS")] if r.get("ws") else []
+        return sorted({c.split(":")[0] for c in self.uni[cp]["kStrange"].split()})
+
+    def badges(self, cp):
+        """字の下に出す札。"""
+        if self.spec.get("facet") == "ukdoc":
+            sid = self.uni[cp].get("kIRG_UKSource", "")
+            return f'<span class="cat">{html.escape(sid)}</span>' if sid else ""
+        return "".join(self.cat_badge(c) for c in self.uni[cp]["kStrange"].split())
+
+    def glyph_cell(self, cp, lhex):
+        """字形。kStrange は GlyphWiki の SVG、UK-source は提出文書の添付フォント。"""
+        if self.spec.get("glyph") == "ukfont":
+            r = self.uk.get(self.uni[cp].get("kIRG_UKSource", "")) or {}
+            if r.get("pua") and r.get("font"):
+                ch = html.escape(chr(int(cp[2:], 16)))
+                return (f'<span class="uk {r["font"]}">&#x{r["pua"]};</span>'
+                        f'<span class="sr">{ch}</span>')
+            return '<span class="none">字形なし</span>'
+        return f'<img src="../glyphs/u{lhex}.svg" alt="{cp}" loading="lazy">'
+
     def build(self):
-        cps = targets(self.uni, self.category)
+        cps = self.select()
         if self.zi:
             miss = self.untranslated(cps)
             if miss:
@@ -474,14 +511,27 @@ class Builder:
         hashes = " / ".join(
             f'{k} <code>{v["sha256"][:12]}…</code>' for k, v in files.items()
             if k in ("Unihan.zip", "USourceData.txt"))
-        title = (f"kStrange カテゴリ {self.category}" if self.category != "all"
-                 else "kStrange 全字")
-        catname = self.cats.get(self.category, "")
-        catname = f" ({html.escape(catname)})" if catname else""
+        common = ("🔎 が付いたリンクは原典の該当箇所。字義や用例の<b>文中</b>に出てくる"
+                  "拡張 A 以降の字は GlyphWiki の SVG に差し替えてある "
+                  "(選択してコピーすれば字のまま取れる)。")
+        if self.spec.get("select") == "uk":
+            title, catname = self.spec["title"], ""
+            lead = (f"英国が IRG へ提出した {len(cps):,} 字。用例に挙げられた書名と"
+                    f"ページが提出文書に残っている。<b>字形は提出文書が抱えている"
+                    f"フォントそのもの</b>で、英国が「この形で」と出したもの。" + common)
+        else:
+            title = (f"kStrange カテゴリ {self.category}" if self.category != "all"
+                     else "kStrange 全字")
+            catname = self.cats.get(self.category, "")
+            catname = f" ({html.escape(catname)})" if catname else ""
+            lead = (f"Unihan の provisional プロパティ <code>kStrange</code>{catname} が"
+                    f"付く {len(cps):,} 字について、字形と出典をまとめたもの。"
+                    f"字形は GlyphWiki の SVG なので、フォントの有無にかかわらず"
+                    f"表示される。" + common)
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         self.count = len(cps)
         self.page_title = title
-        return TEMPLATE.format(title=title, catname=catname, nav=self.nav_html(),
+        return TEMPLATE.format(title=title, lead=lead, nav=self.nav_html(),
                                count=len(cps), rows=rows, now=now, chips=chips,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
@@ -560,6 +610,16 @@ td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line
 /* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
 col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
 td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
+/* UK-source の字形は提出文書が抱えているフォントで出す。私用領域に置かれていて、
+   対応は Excel の PUA 欄。GlyphWiki から 3,409 件の SVG を取るより速く、
+   英国が提出した字形そのもの。テキストなので暗い配色でも色が付いてくる */
+@font-face {{ font-family:uk2015; src:url(../fonts/uk2015.ttf); font-display:block }}
+@font-face {{ font-family:uk2017; src:url(../fonts/uk2017.ttf); font-display:block }}
+@font-face {{ font-family:uk2021; src:url(../fonts/uk2021.ttf); font-display:block }}
+.uk {{ font-size:84px; line-height:1.05 }}
+.uk2015 {{ font-family:uk2015 }}
+.uk2017 {{ font-family:uk2017 }}
+.uk2021 {{ font-family:uk2021 }}
 /* GlyphWiki の SVG は fill="black" 固定。暗い配色では地に沈むので反転させる
    (黒一色・背景は透明なので、反転すると白抜きになる) */
 @media (prefers-color-scheme: dark) {{ td.g img {{ filter:invert(1) }} }}
@@ -652,6 +712,7 @@ details.dt > summary {{ display:none }}
   td {{ display:block; padding:0; border-bottom:none;
         overflow-wrap:anywhere }}   /* 長い書誌や URL で横に溢れさせない */
   td.g img {{ width:56px; height:56px }}
+  .uk {{ font-size:56px }}
   /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
   td.id .cp, td.id .sub {{ display:inline }}
   td.id .sub {{ margin-left:.5rem }}
@@ -681,11 +742,7 @@ details.dt > summary {{ display:none }}
 <nav class="nav">{nav}</nav>
 <h1>{title} — 出典一覧</h1>
 <details class="dt intro" open><summary>このページについて</summary>
-<p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
-{count} 字について、字形と出典をまとめたもの。🔎 が付いたリンクは原典の該当箇所。
-字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。字義や用例の
-<b>文中</b>に出てくる拡張 A 以降の字も同じく SVG に差し替えてある (選択してコピーすれば
-字のまま取れる)。</p>
+<p class="lead">{lead}</p>
 <p class="meta">Unicode {uv} / UTN #43 ({utn}) &nbsp;·&nbsp; 入力の SHA-256: {hashes}
 &nbsp;·&nbsp; 生成 {now} &nbsp;·&nbsp;
 <a href="https://github.com/delphinus/unicode-kstrange">生成スクリプト</a></p>

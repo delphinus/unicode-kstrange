@@ -17,6 +17,9 @@ lead = "形が非典型的だと Unicode が分類した字"
 slug = "uk"
 title = "UK-source"
 lead = "英国が IRG へ提出した字。用例の書名とページが提出文書に残っている"
+select = "uk"          # kIRG_UKSource を持つ字
+facet = "ukdoc"        # 絞り込みは提出した作業集合 (WS2015 / WS2017 / WS2021)
+glyph = "ukfont"       # 字形は提出文書の添付フォント
 
 [[collection]]
 slug = "u-source"

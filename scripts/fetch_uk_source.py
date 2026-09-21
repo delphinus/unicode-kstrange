@@ -19,22 +19,49 @@ import zipfile
 import zlib
 from io import BytesIO
 
-from common import CACHE, fetch, log
+from common import CACHE, DOCS as DOCS_DIR, fetch, log
 
 RAW = "https://github.com/unicode-org/uk-source-ideographs/raw/main/{}.pdf"
 
 # 文書ごとに列の並びが違う。値は 0 始まりの列番号。
+# pua は添付フォントの中でその字が置かれている私用領域のコードポイント。
 DOCS = {
     "IRGN2107R2": {"label": "IRG N2107R2", "ws": "IRG Working Set 2015",
-                   "src": 1, "ids": 7, "var": 8, "ev": 9, "fig": 10, "note": 16},
+                   "font": "uk2015", "src": 1, "ids": 7, "var": 8, "ev": 9,
+                   "fig": 10, "pua": 11, "note": 16},
     "IRGN2232R": {"label": "IRG N2232R", "ws": "IRG Working Set 2017",
-                  "src": 1, "ids": 7, "var": 8, "title": 10, "page": 11,
-                  "fig": 12, "note": 17},
+                  "font": "uk2017", "src": 1, "ids": 7, "var": 8, "title": 10,
+                  "page": 11, "fig": 12, "pua": 14, "note": 17},
     "IRGN2487": {"label": "IRG N2487", "ws": "IRG Working Set 2021",
-                 "src": 1, "ids": 10, "var": 11, "ev": 12, "fig": 13, "note": 14},
+                 "font": "uk2021", "src": 1, "ids": 10, "var": 11, "ev": 12,
+                 "fig": 13, "pua": 2, "note": 14},
 }
 
 M = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+
+
+def embedded_font(pdf: bytes) -> bytes:
+    """PDF が添付として抱えている TrueType を取り出す。
+
+    代表字形はこのフォントが持っていて、Excel の PUA 欄で引ける。GlyphWiki から
+    3,409 件の SVG を取るより、こちらのほうが速いうえに、英国が提出した字形
+    そのもの。本文の描画に使っているサブセットも同じ形で埋まっているので、
+    いちばん大きいものを選ぶ。
+    """
+    best = b""
+    for m in re.finditer(rb"stream\r?\n", pdf):
+        end = pdf.find(b"endstream", m.end())
+        if end < 0:
+            continue
+        try:
+            out = zlib.decompress(pdf[m.end():end])
+        except zlib.error:
+            continue
+        if out[:4] in (b"\x00\x01\x00\x00", b"true") and len(out) > len(best):
+            best = out
+    if not best:
+        raise SystemExit("PDF の中にフォントが見つからない")
+    return best
 
 
 def embedded_xlsx(pdf: bytes) -> bytes:
@@ -98,7 +125,11 @@ def main():
     out: dict[str, dict] = {}
     for name, col in DOCS.items():
         path = fetch(f"{name}.pdf", RAW.format(name))
-        rows = list(sheet_rows(embedded_xlsx(path.read_bytes())))
+        blob = path.read_bytes()
+        font = DOCS_DIR / "fonts" / f"{col['font']}.ttf"
+        font.parent.mkdir(parents=True, exist_ok=True)
+        font.write_bytes(embedded_font(blob))
+        rows = list(sheet_rows(embedded_xlsx(blob)))
         n = 0
         for cells in rows[1:]:                      # 1 行目は見出し
             sid = cells.get(col["src"], "")
@@ -110,7 +141,11 @@ def main():
                 ev = [f"{title} p. {page}" if page else title] if title else []
             else:
                 ev = citations(cells.get(col["ev"], ""))
-            rec = {"doc": col["label"], "ws": col["ws"], "evidence": ev}
+            rec = {"doc": col["label"], "ws": col["ws"], "evidence": ev,
+                   "font": col["font"]}
+            pua = (cells.get(col["pua"], "") or "").replace("U+", "").strip()
+            if re.fullmatch(r"[0-9A-Fa-f]{4}", pua):
+                rec["pua"] = pua.upper()
             for key in ("ids", "var", "fig", "note"):
                 if cells.get(col.get(key, -1)):
                     rec[key] = cells[col[key]]

@@ -12,6 +12,10 @@ docs/index.html
 docs/*/index.html
 docs/*/meta.json
 
+# UK-source の代表字形。提出文書 (cache/IRGN*.pdf) の添付を取り出したもので、
+# make uk-source で作り直せる。Arphic Public License。
+docs/fonts/
+
 # zi.tools の字義の訳語表。キーが原文そのものなので、上と同じ理由で置かない。
 # 手書きの資産なので、消さないこと (リポジトリの外でバックアップする)。
 data/zi_tools_ja.toml

@@ -24,7 +24,7 @@ wiktionary:
 zi-tools:
 	$(SCRIPTS) scripts/fetch_zi_tools.py --category $(CATEGORY)
 
-## UK-source の提出文書 (の添付表) から字ごとの用例証拠を cache/ に残す
+## UK-source の提出文書から用例証拠を cache/ に、代表字形を docs/fonts/ に取り出す
 uk-source:
 	$(SCRIPTS) scripts/fetch_uk_source.py
 
@@ -54,7 +54,7 @@ check-utn43:
 ## 生成物を消す (取得済みの入力は残す)
 clean:
 	rm -f docs/index.html
-	rm -rf docs/glyphs docs/kstrange
+	rm -rf docs/glyphs docs/fonts docs/kstrange docs/uk
 
 ## 取得済みの入力も消す
 distclean: clean
