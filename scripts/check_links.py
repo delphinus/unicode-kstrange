@@ -20,6 +20,11 @@ from common import DOCS, log
 BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
               "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36")
 
+# 公開先を Referer として送る。ホットリンクを弾くサイトがあり、Referer 無しで叩くと
+# 素通りしてしまって、実際にクリックしたときだけ失敗する状態を見逃す
+# (kangxizidian.com のページ画像がこれだった)。
+REFERER = "https://delphinus.github.io/unicode-kstrange/"
+
 # ホスト → そのホストでボット検証として現れる状態
 BOT_GATED = {
     "glyphwiki.org": {403, 503},        # Cloudflare の JS チャレンジ
@@ -29,13 +34,21 @@ BOT_GATED = {
 
 
 def status(url, retries=1):
-    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
+    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA,
+                                               "Referer": REFERER})
     for attempt in range(retries + 1):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 return r.status
         except urllib.error.HTTPError as e:
             return e.code
+        except urllib.error.URLError as e:
+            # リダイレクトの輪に落ちるのもホットリンク対策でよくある形
+            if "redirect" in str(e.reason).lower():
+                return "リダイレクトの輪"
+            if attempt == retries:
+                return f"接続できず ({type(e).__name__})"
+            time.sleep(2)
         except Exception as e:
             if attempt == retries:
                 return f"接続できず ({type(e).__name__})"

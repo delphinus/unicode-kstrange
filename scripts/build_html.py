@@ -13,7 +13,9 @@ import re
 from common import (CACHE, DOCS, UNICODE_VERSION, UTN43_REVISION, blocks, log,
                     manifest, targets, toml, unihan, usource)
 
-KX = "https://kangxizidian.com/kangxi/{page:04d}.gif"      # 康熙字典網上版 (同文書局原版)
+# 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
+# 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
+KX = "https://kangxizidian.com/kxhans/{enc}"
 MJ = ("https://moji.or.jp/mojikibansearch/info?"
       "MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D={mj}")
 UNIHAN = "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint={hex}"
@@ -62,12 +64,13 @@ class Builder:
                 return BLOCK_JA.get(name, name)
         return "?"
 
-    def expand_source(self, val):
+    def expand_source(self, val, enc):
         """IRG ソース参照 1 件を、読める出典名 (可能ならリンク付き) にする。"""
         if val.startswith("GKX"):
             page, pos = val[4:].split(".")
-            return a(KX.format(page=int(page)),
-                     f"康熙字典 {int(page)} ページ {int(pos)} 字目 (1958 年第 9 版) 📄")
+            # GKX が付く字は康熙字典に実在するので、字頭検索で引ける
+            return a(KX.format(enc=enc),
+                     f"康熙字典 {int(page)} ページ {int(pos)} 字目 (1958 年第 9 版) 🔎")
         if val.startswith("GHZ") and not val.startswith("GHZR"):
             b = val[4:]
             return (f"漢語大字典 第 {b[0]} 巻 {int(b[1:5])} ページ "
@@ -80,14 +83,17 @@ class Builder:
                 return self.srcmap[p]
         return html.escape(val)
 
-    def dict_entries(self, v):
+    def dict_entries(self, v, enc):
         # 空白区切りで複数の位置を持つ字がある (kHanYu / kSBGY / kMorohashi など)
         out = []
         for ref in v.get("kKangXi", "").split():
             page, pos = ref.split(".")
-            t = a(KX.format(page=int(page)),
-                  f"康熙字典 {int(page)} ページ {int(pos[:-1])} 字目 📄")
-            out.append(t + ("" if pos[-1] == "0" else VIRT))
+            label = f"康熙字典 {int(page)} ページ {int(pos[:-1])} 字目"
+            if pos[-1] == "0":
+                out.append(a(KX.format(enc=enc), label + " 🔎"))
+            else:
+                # 仮想位置の字は字頭検索に出てこないのでリンクしない
+                out.append(label + VIRT)
         for ref in v.get("kHanYu", "").split():
             head, pos = ref.split(".")
             t = (f"漢語大字典 第 {head[0]} 巻 {int(head[1:])} ページ "
@@ -134,10 +140,10 @@ class Builder:
 
         cites = "".join(
             f'<li><b>{k[5:].replace("Source", "")}</b> <code>{html.escape(val)}</code>'
-            f"<br>{self.expand_source(val)}</li>"
+            f"<br>{self.expand_source(val, enc)}</li>"
             for k, val in sorted(v.items()) if k.startswith("kIRG_"))
 
-        dicts = "".join(f"<li>{d}</li>" for d in self.dict_entries(v)) \
+        dicts = "".join(f"<li>{d}</li>" for d in self.dict_entries(v, enc)) \
             or '<li class="none">索引なし</li>'
 
         links = [a(UNIHAN.format(hex=cp[2:]), "Unihan"),
@@ -149,9 +155,10 @@ class Builder:
         if v.get("kMojiJoho"):
             mj = v["kMojiJoho"].split()[0]
             links.append(a(MJ.format(mj=mj), mj))
-        if "kKangXi" in v:
-            pg = int(v["kKangXi"].split(".")[0])
-            links.append(a(KX.format(page=pg), f"康熙字典 p.{pg} 📄"))
+        kx = v.get("kKangXi", "").split()
+        if kx and kx[0].endswith("0"):
+            pg = int(kx[0].split(".")[0])
+            links.append(a(KX.format(enc=enc), f"康熙字典 p.{pg} 🔎"))
 
         readings = [f"{lab} {html.escape(v[key])}" for key, lab in
                     (("kJapanese", "和"), ("kMandarin", "官"),
@@ -303,7 +310,7 @@ footer ul {{ padding-left:1.2rem }}
 <header>
 <h1>{title} — 出典一覧</h1>
 <p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
-{count} 字について、字形と出典をまとめたもの。📄 が付いたリンクは原典のページ画像。
+{count} 字について、字形と出典をまとめたもの。🔎 が付いたリンクは原典の該当箇所。
 字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。</p>
 <p class="meta">Unicode {uv} / UTN #43 ({utn}) &nbsp;·&nbsp; 入力の SHA-256: {hashes}
 &nbsp;·&nbsp; 生成 {now} &nbsp;·&nbsp;
@@ -326,9 +333,11 @@ footer ul {{ padding-left:1.2rem }}
 <footer>
 <h2>原典をどこまで開けるか</h2>
 <ul>
-<li><b>康熙字典</b> — <a href="https://kangxizidian.com/">康熙字典網上版</a> に同文書局原版のページ画像がある。
-Unihan の <code>kKangXi</code> や IRG の <code>GKX</code> のページ番号がそのまま画像の番号に対応するので、
-該当ページを直接開ける (📄)。ページ 1537 を開けば 龘 や 𪚥 が並んでいるのが見える。</li>
+<li><b>康熙字典</b> — <a href="https://kangxizidian.com/">康熙字典網上版</a> の字頭検索へリンクしている (🔎)。
+同サイトには同文書局原版のページ画像もあり、Unihan の <code>kKangXi</code> や IRG の <code>GKX</code> の
+ページ番号がそのまま画像の番号に対応するが、画像は外部からのリンクを弾く設定なので、
+検索ページのほうを指している。<code>kKangXi</code> の末尾が 0 以外の字は康熙字典に実在せず
+検索にも出てこないため、リンクを張っていない。</li>
 <li><b>zi.tools (字統網)</b> — IRG のソース参照・字形の分解・異体字に加えて、字義に出典のタグが付く。
 ここだけで用例の当たりが付くことがある。</li>
 <li><b>漢典 (zdic.net)</b> — 拡張 J の字でも引ける。読み・意味・部首はここが手早い。</li>

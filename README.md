@@ -57,7 +57,7 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-ut
 3. **提案文書まで遡る**。U-source の字は `USourceData.txt` の文書番号から UTC 文書 (L2/…) を、
    UK-source の字は英国の IRG 提出文書 (N2107R2 / N2232R) の証拠一覧と参考文献表を読む。
    ここで出てきた書誌は [`data/books.toml`](data/books.toml)、字ごとのメモは [`data/notes.toml`](data/notes.toml) に手で書く。
-4. **開けるものはリンクにする**。康熙字典はページ画像、書籍は Amazon と国立国会図書館サーチ、
+4. **開けるものはリンクにする**。康熙字典は字頭検索、書籍は Amazon と国立国会図書館サーチ、
    提案文書は PDF、字ごとに zi.tools / 漢典 / Wiktionary / GlyphWiki / 文字情報基盤。
    Wiktionary は項目が無い字があるので、あらかじめ調べて**ある字にだけ**張る。
 
@@ -65,7 +65,8 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-ut
 
 | | 字数 |
 |---|---|
-| 康熙字典のページ画像を直接開ける | 555 |
+| 康熙字典に実在し、字頭検索を開ける | 213 |
+| 康熙字典の位置を持つが仮想位置 (実在しない) | 342 |
 | 漢語大字典の位置が分かる (リンクは無い) | 390 |
 | 文字情報基盤 (MJ) の項目がある | 435 |
 | Wiktionary に項目がある | 446 |
@@ -93,6 +94,10 @@ zi.tools・漢典・GlyphWiki・Unihan は 828 字すべてに項目がある。
 - **漢語大字典** — 自由に読めるページ画像が見つからない。巻・ページ・字順は載せているので、
   紙か商用の電子版で引く必要がある。
 - **大漢和辞典・宋本広韻・大字源** — 自由に読めるオンライン版が無い。番号のみ載せている。
+- **康熙字典のページ画像** — 康熙字典網上版は同文書局原版のスキャンを持っていて、Unihan の
+  `kKangXi` のページ番号がそのまま画像の番号 (`/kangxi/<4 桁>.gif`) に対応する。ただし画像は
+  Referer でホットリンクを弾いていて、外部のページから辿ると別の画像へ飛ばされる。
+  そのため画像ではなく同サイトの字頭検索へリンクしている。
 - 論文「Biáng 形纹样探究」、《潮语十五音》、韓国歴史情報統合システム — 字ごとに開ける形の
   オンライン版を見つけられなかった。
 
@@ -117,7 +122,7 @@ Unicode の Terms of Use が公衆への配布を目的とした複製・改変�
 | U-source の提案文書 | [UAX #45](https://www.unicode.org/reports/tr45/) と UTC 文書 (L2/…) |
 | UK-source の提案文書 | [unicode-org/uk-source-ideographs](https://github.com/unicode-org/uk-source-ideographs) |
 | 字形 | [GlyphWiki](https://glyphwiki.org/) |
-| 康熙字典のページ画像 | [康熙字典網上版](https://kangxizidian.com/) (同文書局原版) |
+| 康熙字典 | [康熙字典網上版](https://kangxizidian.com/) の字頭検索 |
 
 ## ライセンス
 
