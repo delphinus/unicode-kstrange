@@ -25,14 +25,15 @@ Unicode 14.0 (2021) で導入され、編者は Ken Lunde。Unicode 18.0 時点�
 | K | Katakana Component — カタカナに見える部品を含む | 21 |
 | A | Asymmetric — 構造が非対称 | 5 |
 
-いまの生成物はカテゴリ S (40 画以上、26 字) のみ。`CATEGORY` を変えれば他のカテゴリも作れる。
+生成物は 828 字すべてを 1 枚にしたもので、カテゴリで絞り込める。`CATEGORY` を変えれば
+1 カテゴリだけの版も作れる。
 
 ## 使い方
 
 ```sh
-make              # 入力取得 → 字形取得 → HTML 生成 (カテゴリ S)
-make CATEGORY=B   # 別のカテゴリ
-make CATEGORY=all # 828 字すべて
+make CATEGORY=all   # 入力取得 → 字形取得 → Wiktionary 確認 → HTML 生成 (828 字)
+make                # カテゴリ S だけ (既定)
+make CATEGORY=B     # 別のカテゴリ
 open docs/index.html
 ```
 
@@ -42,8 +43,9 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-ut
 |---|---|
 | `make fetch` | Unihan.zip / Blocks.txt / USourceData.txt / UTN #43 の PDF を `cache/` へ。版と SHA-256 を `cache/manifest.json` に記録する |
 | `make glyphs` | 対象の字の字形 SVG を GlyphWiki から `docs/glyphs/` へ |
+| `make wiktionary` | 英語版 Wiktionary に項目がある字を調べて `cache/` に残す (無い字にリンクを張らないため) |
 | `make html` | `docs/index.html` を組み立てる |
-| `make check-links` | 生成物のリンクを全部叩いて、開けないものを出す |
+| `make check-links` | 生成物のリンクを叩いて、開けないものを出す。`SAMPLE=15` でホストごとに 15 本だけ (828 字だと全部で 4,547 本あるため) |
 | `make check-utn43` | UTN #43 の PDF の記述と Unihan の件数を比べる |
 
 ## 出典をどう辿っているか
@@ -57,6 +59,21 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-ut
    ここで出てきた書誌は [`data/books.toml`](data/books.toml)、字ごとのメモは [`data/notes.toml`](data/notes.toml) に手で書く。
 4. **開けるものはリンクにする**。康熙字典はページ画像、書籍は Amazon と国立国会図書館サーチ、
    提案文書は PDF、字ごとに zi.tools / 漢典 / Wiktionary / GlyphWiki / 文字情報基盤。
+   Wiktionary は項目が無い字があるので、あらかじめ調べて**ある字にだけ**張る。
+
+### 828 字でどこまで届いたか
+
+| | 字数 |
+|---|---|
+| 康熙字典のページ画像を直接開ける | 555 |
+| 漢語大字典の位置が分かる (リンクは無い) | 390 |
+| 文字情報基盤 (MJ) の項目がある | 435 |
+| Wiktionary に項目がある | 446 |
+| 何らかの字書索引を持つ | 558 (持たない字が 270) |
+| 英語の語釈 (`kDefinition`) がある | 88 |
+| 提案文書まで遡ってメモを書いた | 10 |
+
+zi.tools・漢典・GlyphWiki・Unihan は 828 字すべてに項目がある。
 
 ### カテゴリ S で分かったこと
 
