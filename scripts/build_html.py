@@ -460,12 +460,14 @@ img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
 /* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
 .sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
        clip-path:inset(50%); white-space:nowrap }}
+/* 字義はこの表で唯一「読む」ところ。まわりの索引に合わせて小さくすると、
+   差し替えた字形 (明朝体なので線が細い) が潰れて読めない */
 ul.zi {{ margin:0 0 .7rem; padding-left:1.1rem }}
-ul.zi li {{ margin-bottom:.35rem; font-size:.8rem }}
+ul.zi li {{ margin-bottom:.45rem; font-size:1rem }}
 .ja {{ color:#1a1a1a }} .ja::before {{ content:" — "; color:var(--muted) }}
-.zisrc {{ color:var(--muted); font-size:.75rem }}
+.zisrc {{ color:var(--muted); font-size:.8rem }}
 .zisrc::before {{ content:" / " }}
-.zinote {{ color:var(--muted); font-size:.74rem; line-height:1.5 }}
+.zinote {{ color:var(--muted); font-size:.8rem; line-height:1.5 }}
 .fig {{ color:var(--muted); font-size:.75rem; margin:.2rem 0 0 }}
 .note {{ border-left:3px solid var(--accent); padding:.1rem 0 .1rem .7rem }}
 .note b {{ font-size:.8rem }} .note p {{ margin:.2rem 0 .4rem; font-size:.83rem }}
