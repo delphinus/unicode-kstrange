@@ -15,7 +15,7 @@
 GKX = "康熙字典"                                    # GK (GB/T 12052-1989) ではない
 
 # --- zi.tools 独自 ---
-ZITOOLS = "zi.tools 編集部 (典拠は右に併記)"
+ZITOOLS = "zi.tools 編集部"
 BOUYEI = "布依文 (布依語を漢字で書いたもの)"
 CHEUNGBAUER = "Cheung Kwan-hin・Robert S. Bauer『The Representation of Cantonese with Chinese Characters』(2002)"
 VTDCNDG = "《字典喃引解》(Tự Điển Chữ Nôm Dẫn Giải) — 越南の字喃辞典"

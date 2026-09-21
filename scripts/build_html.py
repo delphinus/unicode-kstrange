@@ -408,58 +408,87 @@ TEMPLATE = """<!DOCTYPE html>
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 </script>
 <style>
-:root {{ --line:#d8d8d8; --muted:#6b6b6b; --accent:#1a5fb4 }}
+:root {{
+  color-scheme: light dark;       /* 検索欄やスクロールバーも OS の設定に合わせる */
+  --bg:#fafafa; --surface:#fff; --bar:rgba(250,250,250,.96);
+  --text:#1a1a1a; --soft:#444; --muted:#6b6b6b; --faint:#999; --foot:#333;
+  --line:#d8d8d8; --head:#f4f4f4; --code:#f0f0f0;
+  --accent:#1a5fb4; --on-accent:#fff;
+  --chip-on:#1a1a1a; --on-chip:#fff;
+  --cat-bg:#eef2f8; --cat-line:#cfd9e8;
+  --virt:#a33; --warn-bg:#fff8e1; --warn-line:#e8d48b;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --bg:#16181c; --surface:#1d2025; --bar:rgba(22,24,28,.96);
+    --text:#e6e6e6; --soft:#c2c6cc; --muted:#9aa0a6; --faint:#7a7f87; --foot:#c8ccd2;
+    --line:#33373e; --head:#22262c; --code:#2a2e35;
+    --accent:#83b0ec; --on-accent:#16181c;
+    --chip-on:#e6e6e6; --on-chip:#16181c;
+    --cat-bg:#22303f; --cat-line:#3a4d63;
+    --virt:#e39191; --warn-bg:#332c19; --warn-line:#6b5b2a;
+  }}
+}}
 * {{ box-sizing:border-box }}
 body {{ margin:0; padding:0 0 4rem; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
-        line-height:1.7; color:#1a1a1a; background:#fafafa }}
+        line-height:1.7; color:var(--text); background:var(--bg) }}
 header {{ padding:2rem 2rem 1rem; max-width:1500px; margin:0 auto }}
 h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
 .lead {{ color:var(--muted); max-width:72ch; font-size:.92rem }}
 .meta {{ font-size:.8rem; color:var(--muted); margin-top:.8rem }}
-.bar {{ position:sticky; top:0; z-index:9; background:rgba(250,250,250,.96);
+.bar {{ position:sticky; top:0; z-index:9; background:var(--bar);
         backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
         padding:.7rem 2rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap }}
 .bar input {{ padding:.45rem .7rem; border:1px solid var(--line); border-radius:6px;
               font-size:.9rem; width:22rem; max-width:50vw }}
-.bar button {{ padding:.4rem .7rem; border:1px solid var(--line); background:#fff;
+.bar button {{ padding:.4rem .7rem; border:1px solid var(--line); background:var(--surface);
+               color:inherit;
                border-radius:6px; cursor:pointer; font-size:.85rem }}
-.bar button.on {{ background:var(--accent); color:#fff; border-color:var(--accent) }}
+.bar button.on {{ background:var(--accent); color:var(--on-accent); border-color:var(--accent) }}
 .chips {{ max-width:1500px; margin:.9rem auto 0; padding:0 2rem; display:flex; gap:.4rem; flex-wrap:wrap }}
-.chip {{ padding:.25rem .6rem; border:1px solid var(--line); background:#fff; border-radius:999px;
+.chip {{ padding:.25rem .6rem; border:1px solid var(--line); background:var(--surface);
+         color:inherit; border-radius:999px;
          cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }}
-.chip.on {{ background:#1a1a1a; color:#fff; border-color:#1a1a1a }}
+.chip.on {{ background:var(--chip-on); color:var(--on-chip); border-color:var(--chip-on) }}
 #count {{ font-size:.85rem; color:var(--muted); margin-left:auto }}
 main {{ max-width:1500px; margin:0 auto; padding:0 2rem }}
-table {{ width:100%; border-collapse:collapse; background:#fff; margin-top:1.2rem;
+table {{ width:100%; border-collapse:collapse; background:var(--surface); margin-top:1.2rem;
          border:1px solid var(--line); table-layout:fixed }}
 /* 800 行を超えると表の描画が重いので、画面外の行の描画を後回しにする */
 tbody tr {{ content-visibility:auto; contain-intrinsic-size:auto 220px }}
 th {{ text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
-      padding:.6rem .8rem; border-bottom:2px solid var(--line); background:#f4f4f4 }}
+      padding:.6rem .8rem; border-bottom:2px solid var(--line); background:var(--head) }}
 td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line); font-size:.86rem }}
 /* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
 col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
 td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
+/* GlyphWiki の SVG は fill="black" 固定。暗い配色では地に沈むので反転させる
+   (黒一色・背景は透明なので、反転すると白抜きになる) */
+@media (prefers-color-scheme: dark) {{ td.g img {{ filter:invert(1) }} }}
 .cp {{ font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }}
 .sub {{ color:var(--muted); font-size:.8rem }}
 .cats {{ margin:.35rem 0 }}
 .cat {{ display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:.75rem;
-        background:#eef2f8; border:1px solid #cfd9e8; border-radius:4px;
+        background:var(--cat-bg); border:1px solid var(--cat-line); border-radius:4px;
         padding:.05rem .35rem; margin-right:.25rem; cursor:help }}
 .rd {{ font-size:.8rem; margin-top:.3rem }}
-.df {{ font-size:.8rem; color:#444; font-style:italic; margin-top:.2rem }}
+.df {{ font-size:.8rem; color:var(--soft); font-style:italic; margin-top:.2rem }}
 .lk {{ font-size:.78rem; margin-top:.5rem; line-height:2 }}
 a {{ color:var(--accent) }}
 .h {{ font-size:.72rem; color:var(--muted); font-weight:600; margin:.2rem 0 .1rem; letter-spacing:.04em }}
 .src ul {{ margin:0 0 .7rem; padding-left:1.1rem }}
 .src li {{ margin-bottom:.3rem; font-size:.8rem }}
-code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:#f0f0f0;
+code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:var(--code);
         padding:.05rem .25rem; border-radius:3px }}
-.virt {{ color:#a33; font-size:.75rem }}
-.nolink {{ color:#999; font-size:.78rem }}
+.virt {{ color:var(--virt); font-size:.75rem }}
+.nolink {{ color:var(--faint); font-size:.78rem }}
 /* 本文中に埋める字形。フォントが持っていない字の代わりなので、前後の文字と
-   同じ大きさに合わせる */
+   同じ大きさに合わせる。
+   CSS mask にして currentColor で塗る手もあるが、mask 画像は CORS の対象で
+   file:// から開くと読み込みに失敗し、字形が消える。手元で open docs/index.html
+   する使い方があるので <img> のままにして、暗い配色では反転させる */
 img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
+@media (prefers-color-scheme: dark) {{ img.ig {{ filter:invert(1) }} }}
 /* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
 .sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
        clip-path:inset(50%); white-space:nowrap }}
@@ -467,7 +496,7 @@ img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
    差し替えた字形 (明朝体なので線が細い) が潰れて読めない */
 ul.zi {{ margin:0 0 .7rem; padding-left:1.1rem }}
 ul.zi li {{ margin-bottom:.45rem; font-size:1rem }}
-.ja {{ color:#1a1a1a }} .ja::before {{ content:" — "; color:var(--muted) }}
+.ja {{ color:var(--text) }} .ja::before {{ content:" — "; color:var(--muted) }}
 .zisrc {{ color:var(--muted); font-size:.8rem }}
 .zisrc::before {{ content:" / " }}
 .zinote {{ color:var(--muted); font-size:.8rem; line-height:1.5 }}
@@ -476,11 +505,11 @@ ul.zi li {{ margin-bottom:.45rem; font-size:1rem }}
 .note b {{ font-size:.8rem }} .note p {{ margin:.2rem 0 .4rem; font-size:.83rem }}
 ul.ev {{ margin:.2rem 0 0; padding-left:1.1rem }}
 ul.ev li {{ font-size:.82rem; margin-bottom:.25rem }}
-.none {{ color:#999; font-size:.8rem }}
-footer {{ max-width:1500px; margin:2.5rem auto 0; padding:0 2rem; font-size:.84rem; color:#333 }}
+.none {{ color:var(--faint); font-size:.8rem }}
+footer {{ max-width:1500px; margin:2.5rem auto 0; padding:0 2rem; font-size:.84rem; color:var(--foot) }}
 footer h2 {{ font-size:1rem; margin:1.6rem 0 .4rem }}
 footer ul {{ padding-left:1.2rem }}
-.warn {{ background:#fff8e1; border:1px solid #e8d48b; border-radius:6px;
+.warn {{ background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:6px;
          padding:.8rem 1rem; margin-top:1rem }}
 </style></head><body>
 <header>
