@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kStrange カテゴリ S — 出典一覧</title>
+<style>
+:root { --line:#d8d8d8; --muted:#6b6b6b; --accent:#1a5fb4 }
+* { box-sizing:border-box }
+body { margin:0; padding:0 0 4rem; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+        line-height:1.7; color:#1a1a1a; background:#fafafa }
+header { padding:2rem 2rem 1rem; max-width:1500px; margin:0 auto }
+h1 { font-size:1.6rem; margin:0 0 .4rem }
+.lead { color:var(--muted); max-width:72ch; font-size:.92rem }
+.meta { font-size:.8rem; color:var(--muted); margin-top:.8rem }
+.bar { position:sticky; top:0; z-index:9; background:rgba(250,250,250,.96);
+        backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
+        padding:.7rem 2rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
+.bar input { padding:.45rem .7rem; border:1px solid var(--line); border-radius:6px;
+              font-size:.9rem; width:22rem; max-width:50vw }
+.bar button { padding:.4rem .7rem; border:1px solid var(--line); background:#fff;
+               border-radius:6px; cursor:pointer; font-size:.85rem }
+.bar button.on { background:var(--accent); color:#fff; border-color:var(--accent) }
+#count { font-size:.85rem; color:var(--muted); margin-left:auto }
+main { max-width:1500px; margin:0 auto; padding:0 2rem }
+table { width:100%; border-collapse:collapse; background:#fff; margin-top:1.2rem;
+         border:1px solid var(--line) }
+th { text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
+      padding:.6rem .8rem; border-bottom:2px solid var(--line); background:#f4f4f4 }
+td { vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line); font-size:.86rem }
+td.g { width:110px; text-align:center } td.g img { width:84px; height:84px }
+td.id { width:230px } td.src { width:340px }
+.cp { font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }
+.sub { color:var(--muted); font-size:.8rem }
+.cats { margin:.35rem 0 }
+.cat { display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:.75rem;
+        background:#eef2f8; border:1px solid #cfd9e8; border-radius:4px;
+        padding:.05rem .35rem; margin-right:.25rem; cursor:help }
+.rd { font-size:.8rem; margin-top:.3rem }
+.df { font-size:.8rem; color:#444; font-style:italic; margin-top:.2rem }
+.lk { font-size:.78rem; margin-top:.5rem; line-height:2 }
+a { color:var(--accent) }
+.h { font-size:.72rem; color:var(--muted); font-weight:600; margin:.2rem 0 .1rem; letter-spacing:.04em }
+.src ul { margin:0 0 .7rem; padding-left:1.1rem }
+.src li { margin-bottom:.3rem; font-size:.8rem }
+code { font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:#f0f0f0;
+        padding:.05rem .25rem; border-radius:3px }
+.virt { color:#a33; font-size:.75rem }
+.nolink { color:#999; font-size:.78rem }
+.note { border-left:3px solid var(--accent); padding:.1rem 0 .1rem .7rem }
+.note b { font-size:.8rem } .note p { margin:.2rem 0 .4rem; font-size:.83rem }
+ul.ev { margin:.2rem 0 0; padding-left:1.1rem }
+ul.ev li { font-size:.82rem; margin-bottom:.25rem }
+.none { color:#999; font-size:.8rem }
+footer { max-width:1500px; margin:2.5rem auto 0; padding:0 2rem; font-size:.84rem; color:#333 }
+footer h2 { font-size:1rem; margin:1.6rem 0 .4rem }
+footer ul { padding-left:1.2rem }
+.warn { background:#fff8e1; border:1px solid #e8d48b; border-radius:6px;
+         padding:.8rem 1rem; margin-top:1rem }
+</style></head><body>
+<header>
+<h1>kStrange カテゴリ S — 出典一覧</h1>
+<p class="lead">Unihan の provisional プロパティ <code>kStrange</code> ([S]troke-heavy — 40 画以上) が付く
+26 字について、字形と出典をまとめたもの。📄 が付いたリンクは原典のページ画像。
+字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。</p>
+<p class="meta">Unicode 18.0.0 / UTN #43 (tn43-5) &nbsp;·&nbsp; 入力の SHA-256: Unihan.zip <code>4c93ea9c1f63…</code> / USourceData.txt <code>09bd813866c5…</code>
+&nbsp;·&nbsp; 生成 2026-09-21 10:04 &nbsp;·&nbsp;
+<a href="https://github.com/delphinus/unicode-kstrange">生成スクリプト</a></p>
+</header>
+<div class="bar">
+  <input id="q" type="search" placeholder="検索 (コードポイント・書名・読み・意味…)">
+  <button data-sort="cp" class="on">コードポイント順</button>
+  <button data-sort="strokes">画数順</button>
+  <span id="count"></span>
+</div>
+<main>
+<table>
+<thead><tr><th>字形</th><th>字</th><th>ソース参照・字書索引</th><th>提案文書に記録された用例</th></tr></thead>
+<tbody id="tb">
+<tr data-search="u+4a3b 拡張 a 52 roar of thunders; thunderpeal, very loud sounds ホウ ビョウ bèng s:52 u   g   gkx-1381.18   康熙字典 1381 ページ 18 字目 (1958 年第 9 版) 📄    j   jmj-005410   文字情報基盤 mj005410    t   t3-6246  cns 11643-1992 第 3 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="52" data-cp="19003">
+  <td class="g"><img src="glyphs/u4a3b.svg" alt="U+4A3B" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+4A3B</div>
+    <div class="sub">拡張 A · 52 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:52</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 ホウ ビョウ / 官 bèng / 粤 bang6</div>
+    <div class="df">roar of thunders; thunderpeal, very loud sounds</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4A3B" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%E4%A8%BB" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%E4%A8%BB" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u4a3b" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%E4%A8%BB" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ005410" target="_blank" rel="noopener">MJ005410</a> · <a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 p.1381 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1381.18</code><br><a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 1381 ページ 18 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-005410</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ005410" target="_blank" rel="noopener">文字情報基盤 MJ005410</a></li><li><b>T</b> <code>T3-6246</code><br>CNS 11643-1992 第 3 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 1381 ページ 18 字目 📄</a></li><li>漢語大字典 第 6 巻 4085 ページ 22 字目</li><li>宋本広韻 430 ページ 26 字目</li><li>大漢和辞典 42563 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+4c9c 拡張 a 44 lots of fish ギョウ ゴウ yè s:44 u   g   gkx-1480.51   康熙字典 1480 ページ 51 字目 (1958 年第 9 版) 📄    j   jmj-006027   文字情報基盤 mj006027    kp   kp1-8ddd  kps 10721-2000   t   t4-6e5b  cns 11643-1992 第 4 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="44" data-cp="19612">
+  <td class="g"><img src="glyphs/u4c9c.svg" alt="U+4C9C" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+4C9C</div>
+    <div class="sub">拡張 A · 44 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:44</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 ギョウ ゴウ / 官 yè / 粤 jip3</div>
+    <div class="df">lots of fish</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4C9C" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%E4%B2%9C" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%E4%B2%9C" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u4c9c" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%E4%B2%9C" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ006027" target="_blank" rel="noopener">MJ006027</a> · <a href="https://kangxizidian.com/kangxi/1480.gif" target="_blank" rel="noopener">康熙字典 p.1480 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1480.51</code><br><a href="https://kangxizidian.com/kangxi/1480.gif" target="_blank" rel="noopener">康熙字典 1480 ページ 51 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-006027</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ006027" target="_blank" rel="noopener">文字情報基盤 MJ006027</a></li><li><b>KP</b> <code>KP1-8DDD</code><br>KPS 10721-2000</li><li><b>T</b> <code>T4-6E5B</code><br>CNS 11643-1992 第 4 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1480.gif" target="_blank" rel="noopener">康熙字典 1480 ページ 51 字目 📄</a></li><li>漢語大字典 第 7 巻 4722 ページ 1 字目</li><li>宋本広韻 545 ページ 22 字目</li><li>大漢和辞典 46633 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+9f98 基本ブロック (uro) 48 the appearance of a dragon walking トウ dá s:48   g   ge-5830  gb/t 16500-1998   h   hb2-f9d5  big-5 第 2 水準   j   jmj-030150   文字情報基盤 mj030150    kp   kp1-927d  kps 10721-2000   k   k2-752d  ks x 1027-1:2011   t   t2-7244  cns 11643-1986 第 2 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="48" data-cp="40856">
+  <td class="g"><img src="glyphs/u9f98.svg" alt="U+9F98" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+9F98</div>
+    <div class="sub">基本ブロック (URO) · 48 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:48</span></div>
+    <div class="rd">和 トウ / 官 dá / 粤 daap6</div>
+    <div class="df">the appearance of a dragon walking</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=9F98" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%E9%BE%98" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%E9%BE%98" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u9f98" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%E9%BE%98" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ030150" target="_blank" rel="noopener">MJ030150</a> · <a href="https://kangxizidian.com/kangxi/1537.gif" target="_blank" rel="noopener">康熙字典 p.1537 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GE-5830</code><br>GB/T 16500-1998</li><li><b>H</b> <code>HB2-F9D5</code><br>Big-5 第 2 水準</li><li><b>J</b> <code>JMJ-030150</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ030150" target="_blank" rel="noopener">文字情報基盤 MJ030150</a></li><li><b>KP</b> <code>KP1-927D</code><br>KPS 10721-2000</li><li><b>K</b> <code>K2-752D</code><br>KS X 1027-1:2011</li><li><b>T</b> <code>T2-7244</code><br>CNS 11643-1986 第 2 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1537.gif" target="_blank" rel="noopener">康熙字典 1537 ページ 25 字目 📄</a></li><li>漢語大字典 第 7 巻 4806 ページ 9 字目</li><li>大漢和辞典 48845 番</li><li>大字源 (韓国) 2078.160</li><li>Nelson 5444</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2053b 拡張 b 64  セイ zhèng s:64 u   g   ghz-10254.12  漢語大字典 第 1 巻 254 ページ 12 字目   j   jmj-031023   文字情報基盤 mj031023    提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="64" data-cp="132411">
+  <td class="g"><img src="glyphs/u2053b.svg" alt="U+2053B" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2053B</div>
+    <div class="sub">拡張 B · 64 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:64</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 セイ / 官 zhèng</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2053B" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A0%94%BB" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A0%94%BB" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2053b" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A0%94%BB" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ031023" target="_blank" rel="noopener">MJ031023</a> · <a href="https://kangxizidian.com/kangxi/0128.gif" target="_blank" rel="noopener">康熙字典 p.128 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-10254.12</code><br>漢語大字典 第 1 巻 254 ページ 12 字目</li><li><b>J</b> <code>JMJ-031023</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ031023" target="_blank" rel="noopener">文字情報基盤 MJ031023</a></li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/0128.gif" target="_blank" rel="noopener">康熙字典 128 ページ 29 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 1 巻 254 ページ 12 字目</li><li>大漢和辞典 30276 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+269c4 拡張 b 42  ジン  s:42   g   gkx-1006.21   康熙字典 1006 ページ 21 字目 (1958 年第 9 版) 📄    j   jmj-046052   文字情報基盤 mj046052    t   t7-6653  cns 11643-1992 第 7 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="42" data-cp="158148">
+  <td class="g"><img src="glyphs/u269c4.svg" alt="U+269C4" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+269C4</div>
+    <div class="sub">拡張 B · 42 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:42</span></div>
+    <div class="rd">和 ジン</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=269C4" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A6%A7%84" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A6%A7%84" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u269c4" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A6%A7%84" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ046052" target="_blank" rel="noopener">MJ046052</a> · <a href="https://kangxizidian.com/kangxi/1006.gif" target="_blank" rel="noopener">康熙字典 p.1006 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1006.21</code><br><a href="https://kangxizidian.com/kangxi/1006.gif" target="_blank" rel="noopener">康熙字典 1006 ページ 21 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-046052</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ046052" target="_blank" rel="noopener">文字情報基盤 MJ046052</a></li><li><b>T</b> <code>T7-6653</code><br>CNS 11643-1992 第 7 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1006.gif" target="_blank" rel="noopener">康熙字典 1006 ページ 21 字目 📄</a></li><li>漢語大字典 第 1 巻 519 ページ 18 字目</li><li>大漢和辞典 30274 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+269c5 拡張 b 48  オウ wèng s:48   g   ghz-10254.11  漢語大字典 第 1 巻 254 ページ 11 字目   j   jmj-046053   文字情報基盤 mj046053    t   t5-7c50  cns 11643-1992 第 5 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="48" data-cp="158149">
+  <td class="g"><img src="glyphs/u269c5.svg" alt="U+269C5" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+269C5</div>
+    <div class="sub">拡張 B · 48 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:48</span></div>
+    <div class="rd">和 オウ / 官 wèng</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=269C5" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A6%A7%85" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A6%A7%85" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u269c5" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A6%A7%85" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ046053" target="_blank" rel="noopener">MJ046053</a> · <a href="https://kangxizidian.com/kangxi/1006.gif" target="_blank" rel="noopener">康熙字典 p.1006 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-10254.11</code><br>漢語大字典 第 1 巻 254 ページ 11 字目</li><li><b>J</b> <code>JMJ-046053</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ046053" target="_blank" rel="noopener">文字情報基盤 MJ046053</a></li><li><b>T</b> <code>T5-7C50</code><br>CNS 11643-1992 第 5 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1006.gif" target="_blank" rel="noopener">康熙字典 1006 ページ 21 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 1 巻 254 ページ 11 字目</li><li>大漢和辞典 30275 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+27198 拡張 b 43  ユウ ウ yòu s:43 u   g   gkx-1072.64   康熙字典 1072 ページ 64 字目 (1958 年第 9 版) 📄    j   jmj-047366   文字情報基盤 mj047366    t   t5-7c4f  cns 11643-1992 第 5 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="43" data-cp="160152">
+  <td class="g"><img src="glyphs/u27198.svg" alt="U+27198" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+27198</div>
+    <div class="sub">拡張 B · 43 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:43</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 ユウ ウ / 官 yòu</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=27198" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A7%86%98" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A7%86%98" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u27198" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A7%86%98" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ047366" target="_blank" rel="noopener">MJ047366</a> · <a href="https://kangxizidian.com/kangxi/1072.gif" target="_blank" rel="noopener">康熙字典 p.1072 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1072.64</code><br><a href="https://kangxizidian.com/kangxi/1072.gif" target="_blank" rel="noopener">康熙字典 1072 ページ 64 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-047366</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ047366" target="_blank" rel="noopener">文字情報基盤 MJ047366</a></li><li><b>T</b> <code>T5-7C4F</code><br>CNS 11643-1992 第 5 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1072.gif" target="_blank" rel="noopener">康熙字典 1072 ページ 64 字目 📄</a></li><li>漢語大字典 第 5 巻 3340 ページ 14 字目</li><li>大漢和辞典 32673 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+278b1 拡張 b 44  セイ  s:44   g   gkx-1139.05   康熙字典 1139 ページ 5 字目 (1958 年第 9 版) 📄    j   jmj-048661   文字情報基盤 mj048661    t   t7-6654  cns 11643-1992 第 7 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="44" data-cp="161969">
+  <td class="g"><img src="glyphs/u278b1.svg" alt="U+278B1" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+278B1</div>
+    <div class="sub">拡張 B · 44 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:44</span></div>
+    <div class="rd">和 セイ</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=278B1" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A7%A2%B1" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A7%A2%B1" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u278b1" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A7%A2%B1" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ048661" target="_blank" rel="noopener">MJ048661</a> · <a href="https://kangxizidian.com/kangxi/1139.gif" target="_blank" rel="noopener">康熙字典 p.1139 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1139.05</code><br><a href="https://kangxizidian.com/kangxi/1139.gif" target="_blank" rel="noopener">康熙字典 1139 ページ 5 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-048661</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ048661" target="_blank" rel="noopener">文字情報基盤 MJ048661</a></li><li><b>T</b> <code>T7-6654</code><br>CNS 11643-1992 第 7 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1139.gif" target="_blank" rel="noopener">康熙字典 1139 ページ 5 字目 📄</a></li><li>漢語大字典 第 6 巻 3679 ページ 2 字目</li><li>大漢和辞典 35002 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+291d3 拡張 b 40 thunder ライ  s:40 u   g   gkx-1381.17   康熙字典 1381 ページ 17 字目 (1958 年第 9 版) 📄    j   jmj-052941   文字情報基盤 mj052941    t   t7-6651  cns 11643-1992 第 7 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="40" data-cp="168403">
+  <td class="g"><img src="glyphs/u291d3.svg" alt="U+291D3" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+291D3</div>
+    <div class="sub">拡張 B · 40 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:40</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 ライ / 粤 leoi4</div>
+    <div class="df">thunder</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=291D3" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A9%87%93" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A9%87%93" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u291d3" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A9%87%93" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ052941" target="_blank" rel="noopener">MJ052941</a> · <a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 p.1381 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1381.17</code><br><a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 1381 ページ 17 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-052941</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ052941" target="_blank" rel="noopener">文字情報基盤 MJ052941</a></li><li><b>T</b> <code>T7-6651</code><br>CNS 11643-1992 第 7 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 1381 ページ 17 字目 📄</a></li><li>漢語大字典 第 6 巻 4085 ページ 20 字目</li><li>大漢和辞典 42561 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+291d4 拡張 b 48  ドウ nóng s:48 u   g   ghz-64085.21  漢語大字典 第 6 巻 4085 ページ 21 字目   j   jmj-052942   文字情報基盤 mj052942    t   t4-6e5c  cns 11643-1992 第 4 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="48" data-cp="168404">
+  <td class="g"><img src="glyphs/u291d4.svg" alt="U+291D4" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+291D4</div>
+    <div class="sub">拡張 B · 48 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:48</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 ドウ / 官 nóng</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=291D4" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A9%87%94" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A9%87%94" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u291d4" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A9%87%94" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ052942" target="_blank" rel="noopener">MJ052942</a> · <a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 p.1381 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-64085.21</code><br>漢語大字典 第 6 巻 4085 ページ 21 字目</li><li><b>J</b> <code>JMJ-052942</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ052942" target="_blank" rel="noopener">文字情報基盤 MJ052942</a></li><li><b>T</b> <code>T4-6E5C</code><br>CNS 11643-1992 第 4 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1381.gif" target="_blank" rel="noopener">康熙字典 1381 ページ 17 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 6 巻 4085 ページ 21 字目</li><li>大漢和辞典 42562 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+29663 拡張 b 46  フウ fēng s:46 u   g   ghz-74494.02  漢語大字典 第 7 巻 4494 ページ 2 字目   j   jmj-053845   文字情報基盤 mj053845    提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="46" data-cp="169571">
+  <td class="g"><img src="glyphs/u29663.svg" alt="U+29663" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+29663</div>
+    <div class="sub">拡張 B · 46 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:46</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 フウ / 官 fēng</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=29663" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A9%99%A3" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A9%99%A3" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u29663" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A9%99%A3" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ053845" target="_blank" rel="noopener">MJ053845</a> · <a href="https://kangxizidian.com/kangxi/1415.gif" target="_blank" rel="noopener">康熙字典 p.1415 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-74494.02</code><br>漢語大字典 第 7 巻 4494 ページ 2 字目</li><li><b>J</b> <code>JMJ-053845</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ053845" target="_blank" rel="noopener">文字情報基盤 MJ053845</a></li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1415.gif" target="_blank" rel="noopener">康熙字典 1415 ページ 12 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 7 巻 4494 ページ 2 字目</li><li>大漢和辞典 43999 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+29664 拡張 b 48  コツ  s:48 u   g   gkx-1415.13   康熙字典 1415 ページ 13 字目 (1958 年第 9 版) 📄    j   jmj-053846   文字情報基盤 mj053846    t   t7-6655  cns 11643-1992 第 7 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="48" data-cp="169572">
+  <td class="g"><img src="glyphs/u29664.svg" alt="U+29664" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+29664</div>
+    <div class="sub">拡張 B · 48 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:48</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 コツ</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=29664" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%A9%99%A4" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%A9%99%A4" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u29664" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%A9%99%A4" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ053846" target="_blank" rel="noopener">MJ053846</a> · <a href="https://kangxizidian.com/kangxi/1415.gif" target="_blank" rel="noopener">康熙字典 p.1415 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1415.13</code><br><a href="https://kangxizidian.com/kangxi/1415.gif" target="_blank" rel="noopener">康熙字典 1415 ページ 13 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-053846</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ053846" target="_blank" rel="noopener">文字情報基盤 MJ053846</a></li><li><b>T</b> <code>T7-6655</code><br>CNS 11643-1992 第 7 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1415.gif" target="_blank" rel="noopener">康熙字典 1415 ページ 13 字目 📄</a></li><li>漢語大字典 第 7 巻 4494 ページ 3 字目</li><li>大漢和辞典 43998 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2a4ca 拡張 b 41  ウツ ウチ yù s:41   g   gkx-1522.44   康熙字典 1522 ページ 44 字目 (1958 年第 9 版) 📄    j   jmj-056385   文字情報基盤 mj056385    kp   kp1-915a  kps 10721-2000   t   t7-6652  cns 11643-1992 第 7 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="41" data-cp="173258">
+  <td class="g"><img src="glyphs/u2a4ca.svg" alt="U+2A4CA" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2A4CA</div>
+    <div class="sub">拡張 B · 41 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:41</span></div>
+    <div class="rd">和 ウツ ウチ / 官 yù</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2A4CA" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AA%93%8A" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AA%93%8A" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2a4ca" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AA%93%8A" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056385" target="_blank" rel="noopener">MJ056385</a> · <a href="https://kangxizidian.com/kangxi/1522.gif" target="_blank" rel="noopener">康熙字典 p.1522 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1522.44</code><br><a href="https://kangxizidian.com/kangxi/1522.gif" target="_blank" rel="noopener">康熙字典 1522 ページ 44 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-056385</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056385" target="_blank" rel="noopener">文字情報基盤 MJ056385</a></li><li><b>KP</b> <code>KP1-915A</code><br>KPS 10721-2000</li><li><b>T</b> <code>T7-6652</code><br>CNS 11643-1992 第 7 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1522.gif" target="_blank" rel="noopener">康熙字典 1522 ページ 44 字目 📄</a></li><li>漢語大字典 第 7 巻 4758 ページ 14 字目</li><li>大漢和辞典 48247 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2a68d 拡張 b 40  シ  s:40   g   gkx-1536.32   康熙字典 1536 ページ 32 字目 (1958 年第 9 版) 📄    j   jmj-056756   文字情報基盤 mj056756    t   t5-7c4e  cns 11643-1992 第 5 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="40" data-cp="173709">
+  <td class="g"><img src="glyphs/u2a68d.svg" alt="U+2A68D" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2A68D</div>
+    <div class="sub">拡張 B · 40 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:40</span></div>
+    <div class="rd">和 シ</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2A68D" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AA%9A%8D" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AA%9A%8D" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2a68d" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AA%9A%8D" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056756" target="_blank" rel="noopener">MJ056756</a> · <a href="https://kangxizidian.com/kangxi/1536.gif" target="_blank" rel="noopener">康熙字典 p.1536 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GKX-1536.32</code><br><a href="https://kangxizidian.com/kangxi/1536.gif" target="_blank" rel="noopener">康熙字典 1536 ページ 32 字目 (1958 年第 9 版) 📄</a></li><li><b>J</b> <code>JMJ-056756</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056756" target="_blank" rel="noopener">文字情報基盤 MJ056756</a></li><li><b>T</b> <code>T5-7C4E</code><br>CNS 11643-1992 第 5 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1536.gif" target="_blank" rel="noopener">康熙字典 1536 ページ 32 字目 📄</a></li><li>漢語大字典 第 7 巻 4802 ページ 19 字目</li><li>大漢和辞典 48816 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2a68e 拡張 b 40  タイ zhāi s:40   g   ghz-74802.20  漢語大字典 第 7 巻 4802 ページ 20 字目   j   jmj-056757   文字情報基盤 mj056757    t   t5-7c4d  cns 11643-1992 第 5 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="40" data-cp="173710">
+  <td class="g"><img src="glyphs/u2a68e.svg" alt="U+2A68E" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2A68E</div>
+    <div class="sub">拡張 B · 40 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:40</span></div>
+    <div class="rd">和 タイ / 官 zhāi</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2A68E" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AA%9A%8E" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AA%9A%8E" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2a68e" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AA%9A%8E" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056757" target="_blank" rel="noopener">MJ056757</a> · <a href="https://kangxizidian.com/kangxi/1536.gif" target="_blank" rel="noopener">康熙字典 p.1536 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-74802.20</code><br>漢語大字典 第 7 巻 4802 ページ 20 字目</li><li><b>J</b> <code>JMJ-056757</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056757" target="_blank" rel="noopener">文字情報基盤 MJ056757</a></li><li><b>T</b> <code>T5-7C4D</code><br>CNS 11643-1992 第 5 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1536.gif" target="_blank" rel="noopener">康熙字典 1536 ページ 32 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 7 巻 4802 ページ 20 字目</li><li>大漢和辞典 48817 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2a6a5 拡張 b 64 verbose テツ テチ zhé s:64 u   g   ghz-74806.10  漢語大字典 第 7 巻 4806 ページ 10 字目   j   jmj-056776   文字情報基盤 mj056776    t   t5-7c51  cns 11643-1992 第 5 面   提案文書まで遡っていない (字書・規格の記載のみ) " data-strokes="64" data-cp="173733">
+  <td class="g"><img src="glyphs/u2a6a5.svg" alt="U+2A6A5" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2A6A5</div>
+    <div class="sub">拡張 B · 64 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:64</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 テツ テチ / 官 zhé</div>
+    <div class="df">verbose</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2A6A5" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AA%9A%A5" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AA%9A%A5" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2a6a5" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AA%9A%A5" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056776" target="_blank" rel="noopener">MJ056776</a> · <a href="https://kangxizidian.com/kangxi/1537.gif" target="_blank" rel="noopener">康熙字典 p.1537 📄</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GHZ-74806.10</code><br>漢語大字典 第 7 巻 4806 ページ 10 字目</li><li><b>J</b> <code>JMJ-056776</code><br><a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ056776" target="_blank" rel="noopener">文字情報基盤 MJ056776</a></li><li><b>T</b> <code>T5-7C51</code><br>CNS 11643-1992 第 5 面</li></ul>
+    <div class="h">字書索引</div><ul><li><a href="https://kangxizidian.com/kangxi/1537.gif" target="_blank" rel="noopener">康熙字典 1537 ページ 25 字目 📄</a> <span class="virt">(仮想位置 — その字書には載っていない)</span></li><li>漢語大字典 第 7 巻 4806 ページ 10 字目</li><li>大漢和辞典 48846 番</li></ul>
+  </td>
+  <td class="ev"><span class="none">提案文書まで遡っていない (字書・規格の記載のみ)</span></td>
+</tr>
+<tr data-search="u+2c6a9 拡張 e 53  いわくら  s:53 u   j   jk-65150  日本の国字集 (japanese kokuji collection)    jk-65150  日本の国字集 (japanese kokuji collection) からの提出。unihan の読みは「いわくら」。 zi.tools の字義は「いわくら。對岩石的崇拜、所崇拜的岩石」で、磐座 (いわくら) を指す。  " data-strokes="53" data-cp="181929">
+  <td class="g"><img src="glyphs/u2c6a9.svg" alt="U+2C6A9" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2C6A9</div>
+    <div class="sub">拡張 E · 53 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:53</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    <div class="rd">和 いわくら</div>
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2C6A9" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AC%9A%A9" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AC%9A%A9" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2c6a9" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AC%9A%A9" target="_blank" rel="noopener">Wiktionary</a> · <a href="https://moji.or.jp/mojikibansearch/info?MJ%E6%96%87%E5%AD%97%E5%9B%B3%E5%BD%A2%E5%90%8D=MJ057395" target="_blank" rel="noopener">MJ057395</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>J</b> <code>JK-65150</code><br>日本の国字集 (Japanese KOKUJI Collection)</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>JK-65150</b><p>日本の国字集 (Japanese KOKUJI Collection) からの提出。Unihan の読みは「いわくら」。<br>zi.tools の字義は「いわくら。對岩石的崇拜、所崇拜的岩石」で、磐座 (いわくら) を指す。</p></div></td>
+</tr>
+<tr data-search="u+2e8f1 拡張 f 41    s:41   k   kc-05835  韓国歴史情報統合システム (korean history on-line)    kc-05835  韓国歴史情報統合システム (korean history on-line) からの提出。韓国側の史料データベースに現れた字で、字書索引は付いていない。 zi.tools には出典の一節「乘出千人廢。橫行萬里當。鳴▼(金+麤)搖海岳。振髮逈風霜。」と、システム内の code=76444 が記録されている。   한국역사정보통합시스템 (韓国歴史情報統合システム)  — 字単位の永続リンクが無く、サイト自体もこちらの回線からは開けなかった    " data-strokes="41" data-cp="190705">
+  <td class="g"><img src="glyphs/u2e8f1.svg" alt="U+2E8F1" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+2E8F1</div>
+    <div class="sub">拡張 F · 41 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:41</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=2E8F1" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%AE%A3%B1" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%AE%A3%B1" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u2e8f1" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%AE%A3%B1" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>K</b> <code>KC-05835</code><br>韓国歴史情報統合システム (Korean History On-Line)</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>KC-05835</b><p>韓国歴史情報統合システム (Korean History On-Line) からの提出。韓国側の史料データベースに現れた字で、字書索引は付いていない。<br>zi.tools には出典の一節「乘出千人廢。橫行萬里當。鳴▼(金+麤)搖海岳。振髮逈風霜。」と、システム内の code=76444 が記録されている。</p><ul class="ev"><li>한국역사정보통합시스템 (韓国歴史情報統合システム) <span class="nolink">— 字単位の永続リンクが無く、サイト自体もこちらの回線からは開けなかった</span></li></ul></div></td>
+</tr>
+<tr data-search="u+30edd 拡張 g 43 biangbiang noodles  biáng s:43   u   utc-01312  utc が uax #45 の u-source へ登録した字    utc-01312 /  l2/15-225   ken lunde「proposal to add one character to uax #45」(2015-09-17)。先に登録されていた繁体の biáng (utc-00791) に対する簡体字として提案された。   論文「biáng 形纹样探究」《重庆科技学院学报 (社会科学版)》2012 年  — オンライン版は見つからず    " data-strokes="43" data-cp="200413">
+  <td class="g"><img src="glyphs/u30edd.svg" alt="U+30EDD" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+30EDD</div>
+    <div class="sub">拡張 G · 43 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:43</span></div>
+    <div class="rd">官 biáng</div>
+    <div class="df">biangbiang noodles</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=30EDD" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B0%BB%9D" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B0%BB%9D" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u30edd" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B0%BB%9D" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>U</b> <code>UTC-01312</code><br>UTC が UAX #45 の U-source へ登録した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UTC-01312 / <a href="https://www.unicode.org/L2/L2015/15225-uax45-addition.pdf" target="_blank" rel="noopener">L2/15-225</a></b><p>Ken Lunde「Proposal to add one character to UAX #45」(2015-09-17)。先に登録されていた繁体の biáng (UTC-00791) に対する簡体字として提案された。</p><ul class="ev"><li>論文「Biáng 形纹样探究」《重庆科技学院学报 (社会科学版)》2012 年 <span class="nolink">— オンライン版は見つからず</span></li></ul></div></td>
+</tr>
+<tr data-search="u+30ede 拡張 g 58 biangbiang noodles  biáng s:58   u   utc-00791  utc が uax #45 の u-source へ登録した字    utc-00791  出典として記録されているのは英語版 wikipedia の記事。uax #45 の中でも珍しく、辞書でも提案文書でもなく web ページが典拠になっている。    wikipedia “biangbiang noodles” 2007-10-31 時点の版  (usourcedata.txt が記録している日付の版) /  現在の記事    " data-strokes="58" data-cp="200414">
+  <td class="g"><img src="glyphs/u30ede.svg" alt="U+30EDE" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+30EDE</div>
+    <div class="sub">拡張 G · 58 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:58</span></div>
+    <div class="rd">官 biáng</div>
+    <div class="df">biangbiang noodles</div>
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=30EDE" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B0%BB%9E" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B0%BB%9E" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u30ede" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B0%BB%9E" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>U</b> <code>UTC-00791</code><br>UTC が UAX #45 の U-source へ登録した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UTC-00791</b><p>出典として記録されているのは英語版 Wikipedia の記事。UAX #45 の中でも珍しく、辞書でも提案文書でもなく Web ページが典拠になっている。</p><ul class="ev"><li><a href="https://en.wikipedia.org/w/index.php?oldid=156275387" target="_blank" rel="noopener">Wikipedia “Biangbiang noodles” 2007-10-31 時点の版</a> (USourceData.txt が記録している日付の版) / <a href="https://en.wikipedia.org/wiki/Biangbiang_noodles" target="_blank" rel="noopener">現在の記事</a></li></ul></div></td>
+</tr>
+<tr data-search="u+30f54 拡張 g 76    s:76 u   uk   uk-02961  英国が irg へ提出した字    uk-02961 /  irg n2107r2  fig. 1702–1703  英国提出。用例証拠は次の 2 点。   宮沢賢治『農民とともに』(日本青年館, 1940) 58 ページ —  amazon で探す  /  ndl サーチ   『ザ・ベストハウス図鑑』(扶桑社, 2007) 135 ページ —  amazon  /  ndl サーチ    " data-strokes="76" data-cp="200532">
+  <td class="g"><img src="glyphs/u30f54.svg" alt="U+30F54" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+30F54</div>
+    <div class="sub">拡張 G · 76 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:76</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=30F54" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B0%BD%94" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B0%BD%94" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u30f54" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B0%BD%94" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>UK</b> <code>UK-02961</code><br>英国が IRG へ提出した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UK-02961 / <a href="https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2107R2.pdf" target="_blank" rel="noopener">IRG N2107R2</a> Fig. 1702–1703</b><p>英国提出。用例証拠は次の 2 点。</p><ul class="ev"><li>宮沢賢治『農民とともに』(日本青年館, 1940) 58 ページ — <a href="https://www.amazon.co.jp/s?k=%E5%AE%AE%E6%B2%A2%E8%B3%A2%E6%B2%BB+%E8%BE%B2%E6%B0%91%E3%81%A8%E3%81%A8%E3%82%82%E3%81%AB" target="_blank" rel="noopener">Amazon で探す</a> / <a href="https://ndlsearch.ndl.go.jp/books/R100000002-I000000654979" target="_blank" rel="noopener">NDL サーチ</a></li><li>『ザ・ベストハウス図鑑』(扶桑社, 2007) 135 ページ — <a href="https://www.amazon.co.jp/dp/4594054498" target="_blank" rel="noopener">Amazon</a> / <a href="https://ndlsearch.ndl.go.jp/books/R100000002-I000009041948" target="_blank" rel="noopener">NDL サーチ</a></li></ul></div></td>
+</tr>
+<tr data-search="u+3106c 拡張 g 84    s:84   uk   uk-02960  英国が irg へ提出した字    uk-02960 /  irg n2107r2  fig. 1700–1701  英国提出。用例証拠は日本語の書籍 2 点で、姓として記録されている字。 zi.tools の字義は「「䨺龘」的合字。用於人名、店鋪名」。   大野史朗・藤田豊『難読姓氏辞典』(東京堂出版, 1977) 213 ページ —  amazon で探す  /  ndl サーチ   馬場雄二『直感力が身につく「漢字・熟語」クイズ』(php 研究所, 2011) 52 ページ —  amazon  /  ndl サーチ    " data-strokes="84" data-cp="200812">
+  <td class="g"><img src="glyphs/u3106c.svg" alt="U+3106C" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+3106C</div>
+    <div class="sub">拡張 G · 84 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:84</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=3106C" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B1%81%AC" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B1%81%AC" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u3106c" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B1%81%AC" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>UK</b> <code>UK-02960</code><br>英国が IRG へ提出した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UK-02960 / <a href="https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2107R2.pdf" target="_blank" rel="noopener">IRG N2107R2</a> Fig. 1700–1701</b><p>英国提出。用例証拠は日本語の書籍 2 点で、姓として記録されている字。<br>zi.tools の字義は「「䨺龘」的合字。用於人名、店鋪名」。</p><ul class="ev"><li>大野史朗・藤田豊『難読姓氏辞典』(東京堂出版, 1977) 213 ページ — <a href="https://www.amazon.co.jp/s?k=%E9%9B%A3%E8%AA%AD%E5%A7%93%E6%B0%8F%E8%BE%9E%E5%85%B8" target="_blank" rel="noopener">Amazon で探す</a> / <a href="https://ndlsearch.ndl.go.jp/search?cs=bib&keyword=%E9%9B%A3%E8%AA%AD%E5%A7%93%E6%B0%8F%E8%BE%9E%E5%85%B8" target="_blank" rel="noopener">NDL サーチ</a></li><li>馬場雄二『直感力が身につく「漢字・熟語」クイズ』(PHP 研究所, 2011) 52 ページ — <a href="https://www.amazon.co.jp/dp/4569676758" target="_blank" rel="noopener">Amazon</a> / <a href="https://ndlsearch.ndl.go.jp/books/R100000002-I000011264362" target="_blank" rel="noopener">NDL サーチ</a></li></ul></div></td>
+</tr>
+<tr data-search="u+317db 拡張 h 64    s:64   u   utc-02978  utc が uax #45 の u-source へ登録した字    utc-02978 /  l2/17-083   王谢杨「proposal to add one ideograph used in teochew dialects to uax #45」(2017-04-03)。潮州語の字で、意味は「恋」、潮州語音は soih⁴。提案文書には 4 点の用例図版が付く。   《潮语十五音》の古い版  — オンライン版は見つからず    " data-strokes="64" data-cp="202715">
+  <td class="g"><img src="glyphs/u317db.svg" alt="U+317DB" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+317DB</div>
+    <div class="sub">拡張 H · 64 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:64</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=317DB" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B1%9F%9B" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B1%9F%9B" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u317db" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B1%9F%9B" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>U</b> <code>UTC-02978</code><br>UTC が UAX #45 の U-source へ登録した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UTC-02978 / <a href="https://www.unicode.org/L2/L2017/17083-teochew-dialect-uax45.pdf" target="_blank" rel="noopener">L2/17-083</a></b><p>王谢杨「Proposal to add one ideograph used in Teochew Dialects to UAX #45」(2017-04-03)。潮州語の字で、意味は「恋」、潮州語音は soih⁴。提案文書には 4 点の用例図版が付く。</p><ul class="ev"><li>《潮语十五音》の古い版 <span class="nolink">— オンライン版は見つからず</span></li></ul></div></td>
+</tr>
+<tr data-search="u+31c46 拡張 h 41    s:41 u   g   gca-j0226  文化芸術出版社用字   uk   uk-10126  英国が irg へ提出した字    uk-10126 /  irg n2232r   英国提出。青銅器の金文に現れる字。   constance a. cook &amp; paul r. goldin,  a source book of ancient chinese bronze inscriptions  (2016) —  amazon    " data-strokes="41" data-cp="203846">
+  <td class="g"><img src="glyphs/u31c46.svg" alt="U+31C46" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+31C46</div>
+    <div class="sub">拡張 H · 41 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:41</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=31C46" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B1%B1%86" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B1%B1%86" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u31c46" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B1%B1%86" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>G</b> <code>GCA-J0226</code><br>文化芸術出版社用字</li><li><b>UK</b> <code>UK-10126</code><br>英国が IRG へ提出した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UK-10126 / <a href="https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2232R.pdf" target="_blank" rel="noopener">IRG N2232R</a></b><p>英国提出。青銅器の金文に現れる字。</p><ul class="ev"><li>Constance A. Cook & Paul R. Goldin, <i>A Source Book of Ancient Chinese Bronze Inscriptions</i> (2016) — <a href="https://www.amazon.co.jp/dp/0996944001" target="_blank" rel="noopener">Amazon</a></li></ul></div></td>
+</tr>
+<tr data-search="u+32501 拡張 j 56    s:56 u   u   utc-03221  utc が uax #45 の u-source へ登録した字    utc-03221 /  l2/20-126   alexander zapryagaev「proposal to add two more utc-source ideographs to uax #45」(2020-04-20)。上の l2/20-074 の字に対し、同じ資料に現れる異体として追加提案された。  " data-strokes="56" data-cp="206081">
+  <td class="g"><img src="glyphs/u32501.svg" alt="U+32501" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+32501</div>
+    <div class="sub">拡張 J · 56 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:56</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=32501" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B2%94%81" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B2%94%81" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u32501" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B2%94%81" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>U</b> <code>UTC-03221</code><br>UTC が UAX #45 の U-source へ登録した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UTC-03221 / <a href="https://www.unicode.org/L2/L2020/20126-hashidate.pdf" target="_blank" rel="noopener">L2/20-126</a></b><p>Alexander Zapryagaev「Proposal to Add Two More UTC-Source Ideographs to UAX #45」(2020-04-20)。上の L2/20-074 の字に対し、同じ資料に現れる異体として追加提案された。</p></div></td>
+</tr>
+<tr data-search="u+33143 拡張 j 40    s:40 u   u   utc-03214  utc が uax #45 の u-source へ登録した字    utc-03214 /  l2/20-074   william t. nelson「proposal to add four characters to the u-source ideographs」(2020-03-04)。usourcedata.txt のコメント欄は「天橋立 a place name」。字形は glyphwiki の利用者が作成した。漢典は読みを「はしたて」としている。   asahara hiroyuki『京都の「天橋立」に対する国字とその影印から生じた幽霊文字』(2018) — zi.tools が典拠として挙げている  — cinii では見つからず    " data-strokes="40" data-cp="209219">
+  <td class="g"><img src="glyphs/u33143.svg" alt="U+33143" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">U+33143</div>
+    <div class="sub">拡張 J · 40 画</div>
+    <div class="cats"><span class="cat" title="[S]troke-heavy — 40 画以上">S:40</span><span class="cat" title="[U]nusual Arrangment/Structure — 構造・部品配置が異様">U</span></div>
+    
+    
+    <div class="lk"><a href="https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=33143" target="_blank" rel="noopener">Unihan</a> · <a href="https://zi.tools/zi/%F0%B3%85%83" target="_blank" rel="noopener">zi.tools</a> · <a href="https://www.zdic.net/hans/%F0%B3%85%83" target="_blank" rel="noopener">漢典</a> · <a href="https://glyphwiki.org/wiki/u33143" target="_blank" rel="noopener">GlyphWiki</a> · <a href="https://en.wiktionary.org/wiki/%F0%B3%85%83" target="_blank" rel="noopener">Wiktionary</a></div>
+  </td>
+  <td class="src">
+    <div class="h">IRG ソース参照</div><ul><li><b>U</b> <code>UTC-03214</code><br>UTC が UAX #45 の U-source へ登録した字</li></ul>
+    <div class="h">字書索引</div><ul><li class="none">索引なし</li></ul>
+  </td>
+  <td class="ev"><div class="note"><b>UTC-03214 / <a href="https://www.unicode.org/L2/L2020/20074-four-u-source-ideographs.pdf" target="_blank" rel="noopener">L2/20-074</a></b><p>William T. Nelson「Proposal to add four characters to the U-source ideographs」(2020-03-04)。USourceData.txt のコメント欄は「天橋立 a place name」。字形は GlyphWiki の利用者が作成した。漢典は読みを「はしたて」としている。</p><ul class="ev"><li>Asahara Hiroyuki『京都の「天橋立」に対する国字とその影印から生じた幽霊文字』(2018) — zi.tools が典拠として挙げている <span class="nolink">— CiNii では見つからず</span></li></ul></div></td>
+</tr></tbody>
+</table>
+</main>
+<footer>
+<h2>原典をどこまで開けるか</h2>
+<ul>
+<li><b>康熙字典</b> — <a href="https://kangxizidian.com/">康熙字典網上版</a> に同文書局原版のページ画像がある。
+Unihan の <code>kKangXi</code> や IRG の <code>GKX</code> のページ番号がそのまま画像の番号に対応するので、
+該当ページを直接開ける (📄)。ページ 1537 を開けば 龘 や 𪚥 が並んでいるのが見える。</li>
+<li><b>zi.tools (字統網)</b> — IRG のソース参照・字形の分解・異体字に加えて、字義に出典のタグが付く。
+ここだけで用例の当たりが付くことがある。</li>
+<li><b>漢典 (zdic.net)</b> — 拡張 J の字でも引ける。読み・意味・部首はここが手早い。</li>
+<li><b>文字情報基盤 (MJ)</b>・<b>Wiktionary</b>・<b>GlyphWiki</b> — 字ごとのページ。</li>
+<li><b>提案文書</b> — UTC 文書 (L2/…) と英国の IRG 提出文書は PDF が公開されている。用例の図版はこの中。</li>
+<li><b>書籍</b> — Amazon と国立国会図書館サーチ。ISBN の無い古い本は検索リンク。</li>
+</ul>
+<h2>リンクを付けられなかったもの</h2>
+<ul>
+<li><b>漢語大字典</b> — 無料で読めるページ画像が見つからなかった。スキャンを持っている中国の 国学大师 は、
+Cloudflare WARP の内側からも、WARP の外に出た回線からも接続できない (同じ回線から example.com は開けるので、
+サイト側が日本から届かないということになる)。</li>
+<li><b>大漢和辞典</b>・<b>宋本広韻</b>・<b>大字源</b> — 無料のオンライン版が無い。番号のみ。</li>
+</ul>
+<h2>読むときの注意</h2>
+<ul>
+<li><code>kStrange</code> は provisional なので値は変わる。Unicode 18.0 でも 8 字で値が変わり、25 字が追加された。</li>
+<li>IRG ソース参照の版と Unihan の字書索引の版は必ずしも同じではない。康熙字典の場合、IRG の
+<code>GKX</code> は 1958 年第 9 版、Unihan の <code>kKangXi</code> は 1989 年中華書局第 7 版を指す
+(ページ番号はどちらも同文書局原版のものと一致する)。</li>
+<li>字書索引の末尾の桁が 0 以外のものは、その字書に実際には載っておらず、並べ替えのために
+割り当てられた仮想位置なので赤字で断わってある。</li>
+<li>「提案文書に記録された用例」は、その字が使われた場面のすべてではなく、
+<b>符号化を通すために提出された証拠</b>にすぎない。</li>
+</ul>
+<div class="warn">
+<b>UTN #43 v5 の記述のずれ</b>: Category S の本文は「covering 24 Han ideographs」と書いているが、
+同じ節の表には 26 行あり、Unicode 18.0 の Unihan も 26 字である (17.0 の時点で既に 26 字)。
+本文の数字が更新されていない。<code>scripts/check_utn43.py</code> で検出できる。
+</div>
+</footer>
+<script>
+const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count');
+const rows=[...tb.rows];
+function apply(){
+  const s=q.value.trim().toLowerCase(); let n=0;
+  for(const r of rows){ const hit=!s||r.dataset.search.includes(s);
+    r.style.display=hit?'':'none'; if(hit)n++; }
+  count.textContent=n+' / '+rows.length+' 字';
+}
+q.addEventListener('input',apply);
+for(const b of document.querySelectorAll('[data-sort]')){
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-sort]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const k=b.dataset.sort;
+    rows.sort((x,y)=>(+x.dataset[k])-(+y.dataset[k])).forEach(r=>tb.appendChild(r));
+  });
+}
+apply();
+</script>
+</body></html>

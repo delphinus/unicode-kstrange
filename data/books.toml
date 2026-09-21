@@ -1,0 +1,37 @@
+# 用例証拠として提案文書が挙げている書籍。notes.toml から key で参照する。
+# ISBN のあるものは Amazon の /dp/<ISBN-10> を実際に開き、書名が一致することを確かめた。
+
+[nandoku]
+title = "大野史朗・藤田豊『難読姓氏辞典』(東京堂出版, 1977)"
+note = "国立国会図書館には 1978 年版・1979 年版があり、提案文書が挙げる 1977 年版と版がずれるため検索結果へ張っている"
+links = [
+  { label = "Amazon で探す", url = "https://www.amazon.co.jp/s?k=%E9%9B%A3%E8%AA%AD%E5%A7%93%E6%B0%8F%E8%BE%9E%E5%85%B8" },
+  { label = "NDL サーチ", url = "https://ndlsearch.ndl.go.jp/search?cs=bib&keyword=%E9%9B%A3%E8%AA%AD%E5%A7%93%E6%B0%8F%E8%BE%9E%E5%85%B8" },
+]
+
+[quiz]
+title = "馬場雄二『直感力が身につく「漢字・熟語」クイズ』(PHP 研究所, 2011)"
+links = [
+  { label = "Amazon", url = "https://www.amazon.co.jp/dp/4569676758" },
+  { label = "NDL サーチ", url = "https://ndlsearch.ndl.go.jp/books/R100000002-I000011264362" },
+]
+
+[noumin]
+title = "宮沢賢治『農民とともに』(日本青年館, 1940)"
+links = [
+  { label = "Amazon で探す", url = "https://www.amazon.co.jp/s?k=%E5%AE%AE%E6%B2%A2%E8%B3%A2%E6%B2%BB+%E8%BE%B2%E6%B0%91%E3%81%A8%E3%81%A8%E3%82%82%E3%81%AB" },
+  { label = "NDL サーチ", url = "https://ndlsearch.ndl.go.jp/books/R100000002-I000000654979" },
+]
+
+[besthouse]
+title = "『ザ・ベストハウス図鑑』(扶桑社, 2007)"
+links = [
+  { label = "Amazon", url = "https://www.amazon.co.jp/dp/4594054498" },
+  { label = "NDL サーチ", url = "https://ndlsearch.ndl.go.jp/books/R100000002-I000009041948" },
+]
+
+[bronze]
+title = "Constance A. Cook & Paul R. Goldin, <i>A Source Book of Ancient Chinese Bronze Inscriptions</i> (2016)"
+links = [
+  { label = "Amazon", url = "https://www.amazon.co.jp/dp/0996944001" },
+]

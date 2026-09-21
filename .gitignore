@@ -1,0 +1,10 @@
+# 取得した入力データ (Unihan.zip, UTN #43 の PDF など)。make fetch で取り直せる
+cache/
+
+# ローカルでの検証用に UTN #43 の PDF から切り出した字形。
+# Unicode の Terms of Use により公衆への再配布はできないので、リポジトリには入れない
+docs/glyphs-utn43/
+
+.DS_Store
+__pycache__/
+*.pyc

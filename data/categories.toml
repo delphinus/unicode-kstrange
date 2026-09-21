@@ -1,0 +1,13 @@
+# kStrange の 12 カテゴリ (UAX #38 / UTN #43 の定義を日本語で要約したもの)
+A = "[A]symmetric — 構造が非対称"
+B = "[B]opomofo — 注音字母に似る"
+C = "[C]ursive — 筆記体的で楷書の筆画慣習に従わない"
+H = "[H]angul Component — ハングルの部品を含む"
+I = "[I]ncomplete — 既存字の不完全形に見える"
+K = "[K]atakana Component — カタカナに見える部品を含む"
+M = "[M]irrored — 鏡像、または鏡像の部品を含む"
+O = "[O]dd Component — 記号的・奇妙な部品を含む"
+R = "[R]otated — 回転、または回転した部品を含む"
+S = "[S]troke-heavy — 40 画以上"
+U = "[U]nusual Arrangment/Structure — 構造・部品配置が異様"
+Y = "S[Y]mmetric — 対称の部品を並べている"

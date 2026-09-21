@@ -1,0 +1,107 @@
+# 字ごとの手調べメモ。提案文書 (UTC 文書 / IRG 提出文書) まで遡れた字だけ書く。
+#
+#   source_id   IRG のソース参照 (見出しに出す)
+#   doc_label / doc_url   提案文書へのリンク (無ければ空)
+#   text        本文。HTML 断片を書いてよい
+#   evidence    用例のリスト。book = books.toml のキー / text = 自由記述
+#   nolink      その用例にリンクを張れなかった理由
+
+["U+30EDD"]
+source_id = "UTC-01312"
+doc_label = "L2/15-225"
+doc_url = "https://www.unicode.org/L2/L2015/15225-uax45-addition.pdf"
+text = """
+Ken Lunde「Proposal to add one character to UAX #45」(2015-09-17)。\
+先に登録されていた繁体の biáng (UTC-00791) に対する簡体字として提案された。"""
+evidence = [
+  { text = "論文「Biáng 形纹样探究」《重庆科技学院学报 (社会科学版)》2012 年", nolink = "オンライン版は見つからず" },
+]
+
+["U+30EDE"]
+source_id = "UTC-00791"
+text = """
+出典として記録されているのは英語版 Wikipedia の記事。\
+UAX #45 の中でも珍しく、辞書でも提案文書でもなく Web ページが典拠になっている。"""
+evidence = [
+  { text = "Wikipedia “Biangbiang noodles”", url = "https://en.wikipedia.org/w/index.php?oldid=156275387", label = "2007-10-31 時点の版", extra = "USourceData.txt が記録している日付の版", url2 = "https://en.wikipedia.org/wiki/Biangbiang_noodles", label2 = "現在の記事" },
+]
+
+["U+317DB"]
+source_id = "UTC-02978"
+doc_label = "L2/17-083"
+doc_url = "https://www.unicode.org/L2/L2017/17083-teochew-dialect-uax45.pdf"
+text = """
+王谢杨「Proposal to add one ideograph used in Teochew Dialects to UAX #45」(2017-04-03)。\
+潮州語の字で、意味は「恋」、潮州語音は soih⁴。提案文書には 4 点の用例図版が付く。"""
+evidence = [
+  { text = "《潮语十五音》の古い版", nolink = "オンライン版は見つからず" },
+]
+
+["U+33143"]
+source_id = "UTC-03214"
+doc_label = "L2/20-074"
+doc_url = "https://www.unicode.org/L2/L2020/20074-four-u-source-ideographs.pdf"
+text = """
+William T. Nelson「Proposal to add four characters to the U-source ideographs」(2020-03-04)。\
+USourceData.txt のコメント欄は「天橋立 a place name」。字形は GlyphWiki の利用者が作成した。\
+漢典は読みを「はしたて」としている。"""
+evidence = [
+  { text = "Asahara Hiroyuki『京都の「天橋立」に対する国字とその影印から生じた幽霊文字』(2018) — zi.tools が典拠として挙げている", nolink = "CiNii では見つからず" },
+]
+
+["U+32501"]
+source_id = "UTC-03221"
+doc_label = "L2/20-126"
+doc_url = "https://www.unicode.org/L2/L2020/20126-hashidate.pdf"
+text = """
+Alexander Zapryagaev「Proposal to Add Two More UTC-Source Ideographs to UAX #45」(2020-04-20)。\
+上の L2/20-074 の字に対し、同じ資料に現れる異体として追加提案された。"""
+
+["U+3106C"]
+source_id = "UK-02960"
+doc_label = "IRG N2107R2"
+doc_url = "https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2107R2.pdf"
+doc_suffix = "Fig. 1700–1701"
+text = """
+英国提出。用例証拠は日本語の書籍 2 点で、姓として記録されている字。<br>\
+zi.tools の字義は「「䨺龘」的合字。用於人名、店鋪名」。"""
+evidence = [
+  { book = "nandoku", pages = " 213 ページ" },
+  { book = "quiz", pages = " 52 ページ" },
+]
+
+["U+30F54"]
+source_id = "UK-02961"
+doc_label = "IRG N2107R2"
+doc_url = "https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2107R2.pdf"
+doc_suffix = "Fig. 1702–1703"
+text = "英国提出。用例証拠は次の 2 点。"
+evidence = [
+  { book = "noumin", pages = " 58 ページ" },
+  { book = "besthouse", pages = " 135 ページ" },
+]
+
+["U+31C46"]
+source_id = "UK-10126"
+doc_label = "IRG N2232R"
+doc_url = "https://github.com/unicode-org/uk-source-ideographs/blob/main/IRGN2232R.pdf"
+text = "英国提出。青銅器の金文に現れる字。"
+evidence = [
+  { book = "bronze" },
+]
+
+["U+2C6A9"]
+source_id = "JK-65150"
+text = """
+日本の国字集 (Japanese KOKUJI Collection) からの提出。Unihan の読みは「いわくら」。<br>\
+zi.tools の字義は「いわくら。對岩石的崇拜、所崇拜的岩石」で、磐座 (いわくら) を指す。"""
+
+["U+2E8F1"]
+source_id = "KC-05835"
+text = """
+韓国歴史情報統合システム (Korean History On-Line) からの提出。韓国側の史料データベースに現れた字で、\
+字書索引は付いていない。<br>zi.tools には出典の一節\
+「乘出千人廢。橫行萬里當。鳴▼(金+麤)搖海岳。振髮逈風霜。」と、システム内の code=76444 が記録されている。"""
+evidence = [
+  { text = "한국역사정보통합시스템 (韓国歴史情報統合システム)", nolink = "字単位の永続リンクが無く、サイト自体もこちらの回線からは開けなかった" },
+]
