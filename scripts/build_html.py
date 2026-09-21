@@ -172,7 +172,7 @@ class Builder:
                 continue
             # data/ の記述は HTML 断片を書いてよいことにしてあるので、
             # エスケープはせず、字形の差し替えだけを掛ける
-            body = self.glyphs(e["text"], escape=False)
+            body = self.glyphs(e["text"], escape=False, link="url" not in e)
             if "url" in e:
                 body = a(e["url"], f'{body} {e.get("label", "")}'.strip())
                 if e.get("extra"):
@@ -201,19 +201,29 @@ class Builder:
                 f"{html.escape(label)}</span>")
 
     # -- 本文中の字形 --------------------------------------------------------
-    def glyphs(self, text, escape=True):
+    def glyphs(self, text, escape=True, link=True):
         """フォントが無いと豆腐になる字を GlyphWiki の SVG に差し替える。
 
         表の左端と同じ理屈。字義の中に出てくる字も拡張 B より後のものが多く、
         macOS の標準フォントでは読めない。字そのものは目に見えない形で残すので、
         コピーしても検索しても字が落ちない。
+
+        差し替えた字は zi.tools へのリンクにする。「同=𠷎」のように「知らない字に
+        同じ」と言われても、その字を引けなければ意味が無いため。リンクの入れ子に
+        なる場所 (用例が丸ごと <a> に包まれるとき) と、押すと開閉してしまう
+        <summary> の中では link=False で呼ぶ。
         """
         out = []
         for ch in text:
             h = f"{ord(ch):x}"
             if needs_glyph(ch) and (GLYPHS / f"u{h}.svg").exists():
-                out.append(f'<img class="ig" src="glyphs/u{h}.svg" alt="">'
-                           f'<span class="sr">{html.escape(ch)}</span>')
+                g = (f'<img class="ig" src="glyphs/u{h}.svg" alt="">'
+                     f'<span class="sr">{html.escape(ch)}</span>')
+                out.append(
+                    f'<a class="igl" href="{ZITOOLS.format(enc=pct(ch))}" '
+                    f'target="_blank" rel="noopener" '
+                    f'title="U+{ord(ch):04X} を zi.tools で見る">{g}</a>'
+                    if link else g)
             else:
                 out.append(html.escape(ch) if escape else ch)
         return "".join(out)
@@ -256,7 +266,7 @@ class Builder:
         """狭い画面で畳んだときに見出しへ出す 1 行。字義の 1 件目の訳を使う。"""
         for r in self.zi.get(cp, []):
             if r.get("def"):
-                return self.glyphs(self.zi_ja(r["def"]) or r["def"])
+                return self.glyphs(self.zi_ja(r["def"]) or r["def"], link=False)
         return '<span class="none">字義なし</span>'
 
     # -- 提案文書の自動展開 --------------------------------------------------
@@ -534,6 +544,8 @@ code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:v
    する使い方があるので <img> のままにして、暗い配色では反転させる */
 img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
 @media (prefers-color-scheme: dark) {{ img.ig {{ filter:invert(1) }} }}
+a.igl {{ text-decoration:none }}
+a.igl:hover img.ig {{ opacity:.55 }}
 /* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
 .sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
        clip-path:inset(50%); white-space:nowrap }}
