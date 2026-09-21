@@ -38,6 +38,31 @@ VIRT = ' <span class="virt">(仮想位置 — その字書には載っていな�
 SAME_AS = re.compile(r"同[=「]([^」\s]+)」?")
 
 
+# 1 字ぶんの行。狭い画面では表を崩してカードにするので、列ごとの中身に
+# それぞれ見出しを持たせてある (<thead> が消えても何の欄か分かるように)。
+TR = """
+<tr data-search="{search}" data-strokes="{strokes}" data-cp="{n}" data-cats="{catkeys}">
+  <td class="g"><img src="glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
+  <td class="id">
+    <div class="cp">{cp}</div>
+    <div class="sub">{block} · {strokes_txt} 画</div>
+    <div class="cats">{cats}</div>
+    {readings}
+    {df}
+    <div class="lk">{links}</div>
+  </td>
+  <td class="src">
+    <details class="dt" open><summary>{summary}<span class="more">出典</span></summary>
+    <div class="h">IRG ソース参照</div><ul>{cites}</ul>
+    <div class="h">字書索引</div><ul>{dicts}</ul>
+    {zi}
+    </details>
+  </td>
+  <td class="ev{evnone}">
+    <div class="h evh">提案文書に記録された用例</div>{note}</td>
+</tr>"""
+
+
 def a(url, text):
     return f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 
@@ -159,6 +184,22 @@ class Builder:
             out.append(f"<li>{body}</li>")
         return "".join(out)
 
+    def cat_badge(self, c):
+        """kStrange の値 1 つを札にする。
+
+        値は「I:U+4EB2:U+8F9B」のように、カテゴリの記号のあとに関連する字が
+        並ぶ形。U+2298F は関連字が 31 個あって 382 文字になり、コロン区切りは
+        折り返せないので、そのまま出すと札 1 つで幅 2,773px になる。
+        2 つ以上並ぶときは数だけ出して、中身は title に回す。
+        """
+        head, _, rest = c.partition(":")
+        parts = rest.split(":") if rest else []
+        desc = self.cats.get(head, "")
+        label, tip = (f"{head} ({len(parts)})", f"{desc} — {c}") \
+            if len(parts) > 1 else (c, desc)
+        return (f'<span class="cat" title="{html.escape(tip)}">'
+                f"{html.escape(label)}</span>")
+
     # -- 本文中の字形 --------------------------------------------------------
     def glyphs(self, text, escape=True):
         """フォントが無いと豆腐になる字を GlyphWiki の SVG に差し替える。
@@ -210,6 +251,13 @@ class Builder:
             out.append(f"<li>{body}</li>")
         return ('<div class="h">字義 (zi.tools)</div>'
                 f'<ul class="zi">{"".join(out)}</ul>')
+
+    def zi_summary(self, cp):
+        """狭い画面で畳んだときに見出しへ出す 1 行。字義の 1 件目の訳を使う。"""
+        for r in self.zi.get(cp, []):
+            if r.get("def"):
+                return self.glyphs(self.zi_ja(r["def"]) or r["def"])
+        return '<span class="none">字義なし</span>'
 
     # -- 提案文書の自動展開 --------------------------------------------------
     def uk_note(self, sid):
@@ -318,11 +366,14 @@ class Builder:
                     or '<span class="none">提案文書まで遡っていない '
                        "(字書・規格の記載のみ)</span>")
 
-        cats = "".join(
-            f'<span class="cat" title="{html.escape(self.cats.get(c.split(":")[0], ""))}">'
-            f"{html.escape(c)}</span>" for c in v["kStrange"].split())
+        cats = "".join(self.cat_badge(c) for c in v["kStrange"].split())
 
         zi = self.zi_html(cp)
+        summary = self.zi_summary(cp)
+        # 提案文書まで辿れていない字は、狭い画面では列ごと隠す (761 字が同じ文言)
+        evnone = " nothing" if cp not in self.notes and not (
+            self.uk_note(v.get("kIRG_UKSource", ""))
+            or self.u_note(v.get("kIRG_USource", ""))) else ""
         search = " ".join([cp, self.block_of(cp), v["kTotalStrokes"],
                            v.get("kDefinition", ""), v.get("kJapanese", ""),
                            v.get("kMandarin", ""), v.get("kStrange", ""),
@@ -332,24 +383,17 @@ class Builder:
 
         catkeys = " ".join(sorted({c.split(":")[0] for c in v["kStrange"].split()}))
 
-        return f"""
-<tr data-search="{html.escape(search)}" data-strokes="{int(v['kTotalStrokes'])}" data-cp="{int(cp[2:], 16)}" data-cats="{catkeys}">
-  <td class="g"><img src="glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
-  <td class="id">
-    <div class="cp">{cp}</div>
-    <div class="sub">{self.block_of(cp)} · {v['kTotalStrokes']} 画</div>
-    <div class="cats">{cats}</div>
-    {'<div class="rd">' + ' / '.join(readings) + '</div>' if readings else ''}
-    {'<div class="df">' + html.escape(v['kDefinition']) + '</div>' if v.get('kDefinition') else ''}
-    <div class="lk">{' · '.join(links)}</div>
-  </td>
-  <td class="src">
-    <div class="h">IRG ソース参照</div><ul>{cites}</ul>
-    <div class="h">字書索引</div><ul>{dicts}</ul>
-    {zi}
-  </td>
-  <td class="ev">{note}</td>
-</tr>"""
+        return TR.format(
+            search=html.escape(search), strokes=int(v["kTotalStrokes"]),
+            n=int(cp[2:], 16), catkeys=catkeys, lhex=lhex, cp=cp,
+            block=self.block_of(cp), strokes_txt=v["kTotalStrokes"], cats=cats,
+            readings=('<div class="rd">' + " / ".join(readings) + "</div>"
+                      if readings else ""),
+            df=('<div class="df">' + html.escape(v["kDefinition"]) + "</div>"
+                if v.get("kDefinition") else ""),
+            links=" · ".join(links), summary=summary, cites=cites, dicts=dicts,
+            zi=zi, evnone=evnone, note=note)
+
 
     def filter_bar(self, cps):
         """対象に 2 つ以上のカテゴリがあるときだけ、絞り込みのボタンを出す。"""
@@ -458,7 +502,8 @@ table {{ width:100%; border-collapse:collapse; background:var(--surface); margin
 tbody tr {{ content-visibility:auto; contain-intrinsic-size:auto 220px }}
 th {{ text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
       padding:.6rem .8rem; border-bottom:2px solid var(--line); background:var(--head) }}
-td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line); font-size:.86rem }}
+td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line);
+      font-size:.86rem; overflow-wrap:anywhere }}
 /* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
 col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
 td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
@@ -511,9 +556,65 @@ footer h2 {{ font-size:1rem; margin:1.6rem 0 .4rem }}
 footer ul {{ padding-left:1.2rem }}
 .warn {{ background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:6px;
          padding:.8rem 1rem; margin-top:1rem }}
+/* 狭い画面で畳むための入れ物。広い画面では開いたまま使うので、見出しは消す */
+details.dt > summary {{ display:none }}
+.evh {{ display:none }}
+
+/* ── 狭い画面 ─────────────────────────────────────────────
+   4 列の表は幅 1,500px 前提で、スマホでは潰れて読めない。
+   表を崩して 1 字 1 枚のカードにし、出典は畳んでおく。 */
+@media (max-width: 900px) {{
+  header {{ padding:1.2rem 1rem .6rem }}
+  h1 {{ font-size:1.25rem }}
+  .bar {{ padding:.6rem 1rem; gap:.5rem }}
+  .bar input {{ width:100%; max-width:none; order:-1 }}
+  #count {{ margin-left:0 }}
+  main, footer {{ padding:0 1rem }}
+  /* チップは 13 個あって折り返すと 3 行になる。1 行にして横に送る */
+  .chips {{ padding:0 1rem; margin-top:.7rem; flex-wrap:nowrap;
+            overflow-x:auto; scrollbar-width:none }}
+  .chips::-webkit-scrollbar {{ display:none }}
+  .chip {{ flex:0 0 auto }}
+
+  colgroup, thead {{ display:none }}
+  table {{ display:block; border:none; background:none; margin-top:.8rem }}
+  tbody {{ display:block }}
+  /* 1 行 = 1 枚のカード。字形と見出しだけ横に並べ、残りは下へ流す */
+  tbody tr {{ display:grid; grid-template-columns:auto 1fr; gap:0 .7rem;
+              background:var(--surface); border:1px solid var(--line);
+              border-radius:8px; padding:.8rem; margin-bottom:.7rem;
+              contain-intrinsic-size:auto 380px }}
+  td {{ display:block; padding:0; border-bottom:none;
+        overflow-wrap:anywhere }}   /* 長い書誌や URL で横に溢れさせない */
+  td.g img {{ width:56px; height:56px }}
+  /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
+  td.id .cp, td.id .sub {{ display:inline }}
+  td.id .sub {{ margin-left:.5rem }}
+  .cats {{ margin:.2rem 0 }}
+  .cat {{ margin-bottom:.15rem }}
+  td.src, td.ev {{ grid-column:1 / -1 }}
+  td.src {{ margin-top:.5rem }}
+  td.ev {{ margin-top:.6rem }}
+  /* 提案文書まで辿れていない字は、同じ文言が 761 字ぶん並ぶだけなので出さない */
+  td.ev.nothing {{ display:none }}
+  .evh {{ display:block }}
+  .lk {{ line-height:1.9 }}
+
+  details.dt > summary {{ display:block; cursor:pointer; list-style:none;
+                          font-size:.95rem; margin:0 }}
+  details.dt > summary::-webkit-details-marker {{ display:none }}
+  details.dt > summary::before {{ content:"▸ "; color:var(--muted) }}
+  details.dt[open] > summary::before {{ content:"▾ " }}
+  details.dt > summary .more {{ color:var(--muted); font-size:.78rem;
+                                margin-left:.4rem }}
+  details.dt[open] > summary {{ margin-bottom:.4rem }}
+  .intro > summary {{ color:var(--muted); font-size:.85rem }}
+  .lead {{ font-size:.88rem }}
+}}
 </style></head><body>
 <header>
 <h1>{title} — 出典一覧</h1>
+<details class="dt intro" open><summary>このページについて</summary>
 <p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
 {count} 字について、字形と出典をまとめたもの。🔎 が付いたリンクは原典の該当箇所。
 字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。字義や用例の
@@ -522,6 +623,7 @@ footer ul {{ padding-left:1.2rem }}
 <p class="meta">Unicode {uv} / UTN #43 ({utn}) &nbsp;·&nbsp; 入力の SHA-256: {hashes}
 &nbsp;·&nbsp; 生成 {now} &nbsp;·&nbsp;
 <a href="https://github.com/delphinus/unicode-kstrange">生成スクリプト</a></p>
+</details>
 </header>
 <div class="bar">
   <input id="q" type="search" placeholder="検索 (コードポイント・書名・読み・意味…)">
@@ -610,6 +712,13 @@ for(const b of document.querySelectorAll('[data-sort]')){{
   }});
 }}
 apply();
+
+// 出典は <details open> で出しておいて、狭い画面のときだけ畳む。
+// CSS だけでやる手 (::details-content) は対応が新しく、外すと
+// 広い画面で開けなくなるので、失敗しても開いたままになるこちらにした。
+const narrow=matchMedia('(max-width: 900px)');
+function fold(){{ for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches; }}
+narrow.addEventListener('change',fold); fold();
 </script>
 </body></html>
 """
