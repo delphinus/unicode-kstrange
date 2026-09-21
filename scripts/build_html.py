@@ -472,10 +472,9 @@ TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} — 出典一覧</title>
 <script>
-// 絞り込みは JS でやっていて、再読み込みすると全 828 行の状態に戻る。
-// そこへブラウザがスクロール位置を復元すると、絞り込んでいたときの y 座標のまま
-// まったく違う場所へ飛ばされる (26 行の表と 828 行の表では同じ y が別物になる)。
-// 復元させず、先頭から始める。復元より前に実行したいので head に置く。
+// 絞り込みは JS でやっているので、ブラウザにスクロール位置を復元させると
+// 中身が揃う前の y 座標で飛ばされて、まったく違う場所に着く。復元は自分で
+// やる (下の restore())。ブラウザより先に止めたいので head に置く。
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 </script>
 <style>
@@ -723,7 +722,7 @@ UK-source の 3 通の提出文書は字ごとの一覧を Excel で抱えてい
 <script>
 const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count');
 const rows=[...tb.rows];
-let cat='';
+let cat='',sort='cp';
 function apply(){{
   const s=q.value.trim().toLowerCase(); let n=0;
   for(const r of rows){{
@@ -732,29 +731,82 @@ function apply(){{
     r.style.display=hit?'':'none'; if(hit)n++; }}
   count.textContent=n+' / '+rows.length+' 字';
 }}
-q.addEventListener('input',apply);
-for(const c of document.querySelectorAll('.chip')){{
-  c.addEventListener('click',()=>{{
-    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
-    c.classList.add('on'); cat=c.dataset.cat; apply();
-  }});
+function setCat(v){{
+  cat=v;
+  for(const c of document.querySelectorAll('.chip')) c.classList.toggle('on',c.dataset.cat===v);
 }}
-for(const b of document.querySelectorAll('[data-sort]')){{
-  b.addEventListener('click',()=>{{
-    document.querySelectorAll('[data-sort]').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    const k=b.dataset.sort;
-    rows.sort((x,y)=>(+x.dataset[k])-(+y.dataset[k])).forEach(r=>tb.appendChild(r));
-  }});
+function setSort(k){{
+  sort=k;
+  for(const b of document.querySelectorAll('[data-sort]')) b.classList.toggle('on',b.dataset.sort===k);
+  rows.slice().sort((x,y)=>(+x.dataset[k])-(+y.dataset[k])).forEach(r=>tb.appendChild(r));
 }}
-apply();
 
 // 出典は <details open> で出しておいて、狭い画面のときだけ畳む。
 // CSS だけでやる手 (::details-content) は対応が新しく、外すと
 // 広い画面で開けなくなるので、失敗しても開いたままになるこちらにした。
 const narrow=matchMedia('(max-width: 900px)');
 function fold(){{ for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches; }}
-narrow.addEventListener('change',fold); fold();
+narrow.addEventListener('change',fold);
+
+// ⌘R したときに見た目を戻す。絞り込みも並べ替えもここでやっているので、
+// ブラウザ任せの復元 (フォームの値とスクロール位置だけ) では中身と食い違う。
+// head で scrollRestoration を manual にしてあるのはそのため。自分で覚える。
+const KEY='kstrange:view';
+let hold=false;
+function save(){{
+  if(hold) return;
+  // スクロール位置は画素ではなく「画面の上に来ている行」で覚える。
+  // content-visibility で画面外の行の高さは見積もりなので、画素だとずれる。
+  let top='',off=0;
+  for(const r of rows){{
+    if(r.style.display==='none') continue;
+    const b=r.getBoundingClientRect();
+    if(b.bottom>0){{ top=r.dataset.cp; off=-b.top; break; }}
+  }}
+  const open=[...document.querySelectorAll('tr details.dt[open]')]
+    .map(d=>d.closest('tr').dataset.cp);
+  try{{ sessionStorage.setItem(KEY,JSON.stringify(
+    {{q:q.value,cat:cat,sort:sort,top:top,off:off,y:scrollY,open:open}})); }}catch(e){{}}
+}}
+function restore(){{
+  let v=null;
+  try{{ v=JSON.parse(sessionStorage.getItem(KEY)||'null'); }}catch(e){{}}
+  if(!v){{ apply(); fold(); return; }}
+  hold=true;
+  q.value=v.q||''; setCat(v.cat||'');
+  if(v.sort&&v.sort!=='cp') setSort(v.sort);
+  apply(); fold();
+  if(narrow.matches&&v.open) for(const cp of v.open){{
+    const r=rows.find(x=>x.dataset.cp===cp), d=r&&r.querySelector('details.dt');
+    if(d) d.open=true;
+  }}
+  // 画面外の行の高さは contain-intrinsic-size の見積もりなので、実際に
+  // 描かれるたびに位置が動く。目印の行が狙った位置に来るまで寄せ直す。
+  const r=v.top&&rows.find(x=>x.dataset.cp===v.top&&x.style.display!=='none');
+  if(!r){{ if(v.y) scrollTo(0,v.y); hold=false; return; }}
+  let n=0,stop=false;
+  // 寄せ直しは 1 秒半ほど続くので、その間に自分でスクロールされたら譲る
+  const give=()=>{{stop=true;}};
+  for(const ev of ['wheel','touchstart','keydown','pointerdown'])
+    addEventListener(ev,give,{{once:true,passive:true}});
+  const go=()=>{{
+    if(stop||++n>90){{ hold=false; return; }}
+    const d=r.getBoundingClientRect().top+(v.off||0);   // 0 になれば狙いどおり
+    if(Math.abs(d)>1) scrollTo(0,Math.max(0,scrollY+d));
+    requestAnimationFrame(go);
+  }};
+  requestAnimationFrame(go);
+}}
+q.addEventListener('input',()=>{{apply();save();}});
+for(const c of document.querySelectorAll('.chip'))
+  c.addEventListener('click',()=>{{setCat(c.dataset.cat);apply();save();}});
+for(const b of document.querySelectorAll('[data-sort]'))
+  b.addEventListener('click',()=>{{setSort(b.dataset.sort);save();}});
+tb.addEventListener('toggle',save,true);
+let timer; addEventListener('scroll',()=>{{clearTimeout(timer);timer=setTimeout(save,150);}},
+                            {{passive:true}});
+addEventListener('pagehide',save);
+restore();
 </script>
 </body></html>
 """
