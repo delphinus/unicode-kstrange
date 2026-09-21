@@ -6,11 +6,12 @@
 import argparse
 import datetime
 import html
+import json
 import pathlib
 import re
 
-from common import (DOCS, UNICODE_VERSION, UTN43_REVISION, blocks, log, manifest,
-                    targets, toml, unihan, usource)
+from common import (CACHE, DOCS, UNICODE_VERSION, UTN43_REVISION, blocks, log,
+                    manifest, targets, toml, unihan, usource)
 
 KX = "https://kangxizidian.com/kangxi/{page:04d}.gif"      # 康熙字典網上版 (同文書局原版)
 MJ = ("https://moji.or.jp/mojikibansearch/info?"
@@ -47,6 +48,11 @@ class Builder:
         self.books = toml("books.toml")
         self.notes = toml("notes.toml")
         self.prefixes = sorted(self.srcmap, key=len, reverse=True)
+        # 英語版 Wiktionary に項目がある字 (fetch_wiktionary.py が作る)
+        wk = CACHE / "wiktionary.json"
+        self.wiktionary = json.loads(wk.read_text()) if wk.exists() else {}
+        if not self.wiktionary:
+            log("  cache/wiktionary.json が無いので Wiktionary のリンクは付けない")
 
     # -- 小物 ---------------------------------------------------------------
     def block_of(self, cp):
@@ -75,14 +81,15 @@ class Builder:
         return html.escape(val)
 
     def dict_entries(self, v):
+        # 空白区切りで複数の位置を持つ字がある (kHanYu / kSBGY / kMorohashi など)
         out = []
-        if "kKangXi" in v:
-            page, pos = v["kKangXi"].split(".")
+        for ref in v.get("kKangXi", "").split():
+            page, pos = ref.split(".")
             t = a(KX.format(page=int(page)),
                   f"康熙字典 {int(page)} ページ {int(pos[:-1])} 字目 📄")
             out.append(t + ("" if pos[-1] == "0" else VIRT))
-        if "kHanYu" in v:
-            head, pos = v["kHanYu"].split(".")
+        for ref in v.get("kHanYu", "").split():
+            head, pos = ref.split(".")
             t = (f"漢語大字典 第 {head[0]} 巻 {int(head[1:])} ページ "
                  f"{int(pos[:-1])} 字目")
             out.append(t + ("" if pos[-1] == "0" else VIRT))
@@ -136,8 +143,9 @@ class Builder:
         links = [a(UNIHAN.format(hex=cp[2:]), "Unihan"),
                  a(ZITOOLS.format(enc=enc), "zi.tools"),
                  a(ZDIC.format(enc=enc), "漢典"),
-                 a(GLYPHWIKI.format(lhex=lhex), "GlyphWiki"),
-                 a(WIKTIONARY.format(enc=enc), "Wiktionary")]
+                 a(GLYPHWIKI.format(lhex=lhex), "GlyphWiki")]
+        if self.wiktionary.get(cp):
+            links.append(a(WIKTIONARY.format(enc=enc), "Wiktionary"))
         if v.get("kMojiJoho"):
             mj = v["kMojiJoho"].split()[0]
             links.append(a(MJ.format(mj=mj), mj))
@@ -172,8 +180,10 @@ class Builder:
                            re.sub("<[^>]+>", " ", cites),
                            re.sub("<[^>]+>", " ", note)]).lower()
 
+        catkeys = " ".join(sorted({c.split(":")[0] for c in v["kStrange"].split()}))
+
         return f"""
-<tr data-search="{html.escape(search)}" data-strokes="{int(v['kTotalStrokes'])}" data-cp="{int(cp[2:], 16)}">
+<tr data-search="{html.escape(search)}" data-strokes="{int(v['kTotalStrokes'])}" data-cp="{int(cp[2:], 16)}" data-cats="{catkeys}">
   <td class="g"><img src="glyphs/u{lhex}.svg" alt="{cp}" loading="lazy"></td>
   <td class="id">
     <div class="cp">{cp}</div>
@@ -190,10 +200,25 @@ class Builder:
   <td class="ev">{note}</td>
 </tr>"""
 
+    def filter_bar(self, cps):
+        """対象に 2 つ以上のカテゴリがあるときだけ、絞り込みのボタンを出す。"""
+        counts = {}
+        for cp in cps:
+            for c in {t.split(":")[0] for t in self.uni[cp]["kStrange"].split()}:
+                counts[c] = counts.get(c, 0) + 1
+        if len(counts) < 2:
+            return ""
+        chips = [f'<button class="chip on" data-cat="">すべて {len(cps)}</button>']
+        for c in sorted(counts, key=lambda x: -counts[x]):
+            chips.append(f'<button class="chip" data-cat="{c}" '
+                         f'title="{html.escape(self.cats.get(c, ""))}">{c} {counts[c]}</button>')
+        return f'<div class="chips">{"".join(chips)}</div>'
+
     # -- 全体 ---------------------------------------------------------------
     def build(self):
         cps = targets(self.uni, self.category)
         rows = "".join(self.row(cp) for cp in cps)
+        chips = self.filter_bar(cps)
         m = manifest()
         files = m.get("files", {})
         hashes = " / ".join(
@@ -202,9 +227,10 @@ class Builder:
         title = (f"kStrange カテゴリ {self.category}" if self.category != "all"
                  else "kStrange 全字")
         catname = self.cats.get(self.category, "")
+        catname = f" ({html.escape(catname)})" if catname else""
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        return TEMPLATE.format(title=title, catname=html.escape(catname),
-                               count=len(cps), rows=rows, now=now,
+        return TEMPLATE.format(title=title, catname=catname,
+                               count=len(cps), rows=rows, now=now, chips=chips,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
 
@@ -230,15 +256,22 @@ h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
 .bar button {{ padding:.4rem .7rem; border:1px solid var(--line); background:#fff;
                border-radius:6px; cursor:pointer; font-size:.85rem }}
 .bar button.on {{ background:var(--accent); color:#fff; border-color:var(--accent) }}
+.chips {{ max-width:1500px; margin:.9rem auto 0; padding:0 2rem; display:flex; gap:.4rem; flex-wrap:wrap }}
+.chip {{ padding:.25rem .6rem; border:1px solid var(--line); background:#fff; border-radius:999px;
+         cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }}
+.chip.on {{ background:#1a1a1a; color:#fff; border-color:#1a1a1a }}
 #count {{ font-size:.85rem; color:var(--muted); margin-left:auto }}
 main {{ max-width:1500px; margin:0 auto; padding:0 2rem }}
 table {{ width:100%; border-collapse:collapse; background:#fff; margin-top:1.2rem;
-         border:1px solid var(--line) }}
+         border:1px solid var(--line); table-layout:fixed }}
+/* 800 行を超えると表の描画が重いので、画面外の行の描画を後回しにする */
+tbody tr {{ content-visibility:auto; contain-intrinsic-size:auto 220px }}
 th {{ text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
       padding:.6rem .8rem; border-bottom:2px solid var(--line); background:#f4f4f4 }}
 td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line); font-size:.86rem }}
-td.g {{ width:110px; text-align:center }} td.g img {{ width:84px; height:84px }}
-td.id {{ width:230px }} td.src {{ width:340px }}
+/* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
+col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
+td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
 .cp {{ font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }}
 .sub {{ color:var(--muted); font-size:.8rem }}
 .cats {{ margin:.35rem 0 }}
@@ -269,7 +302,7 @@ footer ul {{ padding-left:1.2rem }}
 </style></head><body>
 <header>
 <h1>{title} — 出典一覧</h1>
-<p class="lead">Unihan の provisional プロパティ <code>kStrange</code> ({catname}) が付く
+<p class="lead">Unihan の provisional プロパティ <code>kStrange</code>{catname} が付く
 {count} 字について、字形と出典をまとめたもの。📄 が付いたリンクは原典のページ画像。
 字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。</p>
 <p class="meta">Unicode {uv} / UTN #43 ({utn}) &nbsp;·&nbsp; 入力の SHA-256: {hashes}
@@ -282,8 +315,10 @@ footer ul {{ padding-left:1.2rem }}
   <button data-sort="strokes">画数順</button>
   <span id="count"></span>
 </div>
+{chips}
 <main>
 <table>
+<colgroup><col class="c-g"><col class="c-id"><col class="c-src"><col></colgroup>
 <thead><tr><th>字形</th><th>字</th><th>ソース参照・字書索引</th><th>提案文書に記録された用例</th></tr></thead>
 <tbody id="tb">{rows}</tbody>
 </table>
@@ -327,13 +362,22 @@ Unihan の <code>kKangXi</code> や IRG の <code>GKX</code> のページ番号�
 <script>
 const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count');
 const rows=[...tb.rows];
+let cat='';
 function apply(){{
   const s=q.value.trim().toLowerCase(); let n=0;
-  for(const r of rows){{ const hit=!s||r.dataset.search.includes(s);
+  for(const r of rows){{
+    const hit=(!s||r.dataset.search.includes(s))
+            &&(!cat||(r.dataset.cats||'').split(' ').includes(cat));
     r.style.display=hit?'':'none'; if(hit)n++; }}
   count.textContent=n+' / '+rows.length+' 字';
 }}
 q.addEventListener('input',apply);
+for(const c of document.querySelectorAll('.chip')){{
+  c.addEventListener('click',()=>{{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on'); cat=c.dataset.cat; apply();
+  }});
+}}
 for(const b of document.querySelectorAll('[data-sort]')){{
   b.addEventListener('click',()=>{{
     document.querySelectorAll('[data-sort]').forEach(x=>x.classList.remove('on'));

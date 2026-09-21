@@ -7,8 +7,10 @@
 403 / 429 / 503 を返す。リンク先が失われたわけではないので「確認できず」として分けて数え、
 終了コードには含めない。
 """
+import argparse
+import collections
+import random
 import re
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -46,10 +48,26 @@ def gated(url, code):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else DOCS / "index.html"
-    doc = open(path, encoding="utf-8").read()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("path", nargs="?", default=str(DOCS / "index.html"))
+    ap.add_argument("--sample", type=int, default=0,
+                    help="ホストごとにこの本数だけ確認する (0 なら全部)")
+    ap.add_argument("--seed", type=int, default=0)
+    args = ap.parse_args()
+
+    doc = open(args.path, encoding="utf-8").read()
     urls = sorted({u for u in re.findall(r'href="(https?://[^"]+)"', doc)})
-    log(f"{len(urls)} 本のリンクを確認する")
+    total = len(urls)
+    if args.sample:
+        by_host = collections.defaultdict(list)
+        for u in urls:
+            by_host[re.match(r"https?://([^/]+)", u)[1]].append(u)
+        rnd = random.Random(args.seed)
+        urls = sorted(u for host, us in by_host.items()
+                      for u in rnd.sample(us, min(args.sample, len(us))))
+        log(f"{total} 本のうち、{len(by_host)} ホストから {len(urls)} 本を抜き出して確認する")
+    else:
+        log(f"{len(urls)} 本のリンクを確認する")
     bad, skipped = [], []
     for u in urls:
         s = status(u)
