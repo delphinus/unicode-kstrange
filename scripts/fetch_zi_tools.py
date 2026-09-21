@@ -28,9 +28,10 @@ import urllib.request
 from common import CACHE, UA, log, targets, unihan
 
 API = "https://zi.tools/api/zi/"
-# 828 字を続けて叩いたところ、途中から応答が返らなくなった。相手に負荷を掛けない
-# 間隔にしておく。全部取るのに 30 分ほど掛かるが、一度取れば cache に残る。
-WAIT = 1.5          # 1 件ごとに空ける間隔 (秒)
+# 0.4 秒で叩いたところ、600 件あたりから応答が返らなくなった。1.5 秒では完走した。
+# 応答は 1 件 20〜260 KB あるので、リクエスト数より転送量のほうが相手の負担になる。
+# 3,409 件だと 320 MB ほど出させることになるため、既定はさらに余裕を見て 2 秒。
+WAIT = 2.0          # 1 件ごとに空ける間隔 (秒)
 TIMEOUT = 30
 
 
@@ -83,11 +84,18 @@ def rows(doc: dict, char: str) -> list[dict]:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--category", default="S")
+    ap.add_argument("--uk", action="store_true",
+                    help="kStrange ではなく UK-source の字を取る")
+    ap.add_argument("--wait", type=float, default=WAIT,
+                    help=f"1 件ごとに空ける間隔 (秒、既定 {WAIT})")
     ap.add_argument("--force", action="store_true",
                     help="取得済みの字も取り直す")
     args = ap.parse_args()
 
-    cps = targets(unihan(), args.category)
+    uni = unihan()
+    cps = (sorted((c for c in uni if uni[c].get("kIRG_UKSource")),
+                  key=lambda x: int(x[2:], 16))
+           if args.uk else targets(uni, args.category))
     CACHE.mkdir(exist_ok=True)
     path = CACHE / "zi_tools.json"
     known = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -106,7 +114,7 @@ def main():
             log(f"  {i} / {len(todo)}")
             path.write_text(json.dumps(known, indent=0, ensure_ascii=False,
                                        sort_keys=True), encoding="utf-8")
-        time.sleep(WAIT)
+        time.sleep(args.wait)
 
     path.write_text(json.dumps(known, indent=0, ensure_ascii=False,
                                sort_keys=True), encoding="utf-8")
