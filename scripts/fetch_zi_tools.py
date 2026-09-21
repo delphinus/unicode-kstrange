@@ -55,6 +55,12 @@ def get(char: str, retries: int = 3) -> dict | None:
     return None
 
 
+# API が字義の代わりに返す記号。zi.tools の画面ではこう表示される。
+# 「@」は 828 字中 40 字にあり、どれも漢語大字典の行。そのまま出しても読めないので
+# 画面と同じ文字列に直しておく (U+204D9 の頁は「xiong4 (1) (义不详)」と出る)。
+PLACEHOLDER = {"@": "义不详"}
+
+
 def rows(doc: dict, char: str) -> list[dict]:
     """問い合わせた字の行だけを取り出す。"""
     out = []
@@ -65,7 +71,7 @@ def rows(doc: dict, char: str) -> list[dict]:
             continue
         entry = {"src": node[1] or "", "pos": node[2] or ""}
         if node[7]:
-            entry["def"] = node[7].strip()
+            entry["def"] = PLACEHOLDER.get(node[7].strip(), node[7].strip())
         if node[13]:
             entry["note"] = node[13].strip()
         if len(entry) > 2:

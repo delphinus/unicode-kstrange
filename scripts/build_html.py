@@ -367,13 +367,9 @@ class Builder:
 
     # -- 全体 ---------------------------------------------------------------
     def untranslated(self, cps):
-        """訳語表に載っていない字義。取り直したあと足すべきものが分かる。
-
-        1 文字だけのものは数えない (zi.tools には字義が「@」だけの行がある)。
-        """
+        """訳語表に載っていない字義。取り直したあと足すべきものが分かる。"""
         return sorted({r["def"] for cp in cps for r in self.zi.get(cp, [])
-                       if r.get("def") and len(r["def"]) > 1
-                       and not self.zi_ja(r["def"])})
+                       if r.get("def") and not self.zi_ja(r["def"])})
 
     def build(self):
         cps = targets(self.uni, self.category)
@@ -517,7 +513,8 @@ footer ul {{ padding-left:1.2rem }}
 (<code>/api/zi/&lt;字&gt;</code>) から取ったもので、原文の下に日本語訳を添えてある
 (訳は <code>data/zi_tools_ja.toml</code>、「同=X」の形だけは機械的に訳している)。
 zi.tools の編集部が付けた字義には典拠の論文・字書が併記されていることがあり、
-それも一緒に出している。</li>
+それも一緒に出している。<b>义不详</b> (義未詳) は、漢語大字典に項目はあるが語釈が無い字に
+zi.tools が付けている印で、828 字のうち 40 字がこれ。</li>
 <li><b>漢典 (zdic.net)</b> — 拡張 J の字でも引ける。読み・意味・部首はここが手早い。</li>
 <li><b>文字情報基盤 (MJ)</b>・<b>Wiktionary</b>・<b>GlyphWiki</b> — 字ごとのページ。</li>
 <li><b>提案文書</b> — UTC 文書 (L2/…) と英国の IRG 提出文書は PDF が公開されている。用例の図版はこの中。
