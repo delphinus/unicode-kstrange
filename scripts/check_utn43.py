@@ -22,7 +22,7 @@ WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
 
 def pdf_text():
     if not shutil.which("pdftotext"):
-        raise SystemExit("pdftotext が無い (brew install poppler)")
+        raise SystemExit("pdftotext が無い (poppler を入れる)")
     pdf = fetch(f"{UTN43_REVISION}.pdf")
     return subprocess.run(["pdftotext", "-layout", str(pdf), "-"],
                           capture_output=True, text=True, check=True).stdout
