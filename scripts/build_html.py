@@ -400,6 +400,13 @@ TEMPLATE = """<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} — 出典一覧</title>
+<script>
+// 絞り込みは JS でやっていて、再読み込みすると全 828 行の状態に戻る。
+// そこへブラウザがスクロール位置を復元すると、絞り込んでいたときの y 座標のまま
+// まったく違う場所へ飛ばされる (26 行の表と 828 行の表では同じ y が別物になる)。
+// 復元させず、先頭から始める。復元より前に実行したいので head に置く。
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+</script>
 <style>
 :root {{ --line:#d8d8d8; --muted:#6b6b6b; --accent:#1a5fb4 }}
 * {{ box-sizing:border-box }}
