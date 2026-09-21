@@ -760,27 +760,53 @@ narrow.addEventListener('change',fold);
 // ブラウザ任せの復元 (フォームの値とスクロール位置だけ) では中身と食い違う。
 // head で scrollRestoration を manual にしてあるのはそのため。自分で覚える。
 const KEY='kstrange:view';
-let hold=false;
-function save(){{
-  if(hold) return;
+// チップごとの読みかけの位置は、しばらく経ったら捨てる。半日前に見ていた
+// 途中に連れ戻されるより、先頭から始めたほうがよい。
+const KEEP=30*60*1000;
+let hold=false, pos={{}}, stamp=Date.now();   // pos: チップ → 画面の上に来ていた行
+function anchor(){{
   // スクロール位置は画素ではなく「画面の上に来ている行」で覚える。
   // content-visibility で画面外の行の高さは見積もりなので、画素だとずれる。
-  let top='',off=0;
   for(const r of rows){{
     if(r.style.display==='none') continue;
     const b=r.getBoundingClientRect();
-    if(b.bottom>0){{ top=r.dataset.cp; off=-b.top; break; }}
+    if(b.bottom>0) return {{top:r.dataset.cp,off:-b.top}};
   }}
+  return null;
+}}
+// touch=false は「保存はするが、最後に触った時刻は進めない」。離脱時 (pagehide) に
+// 進めてしまうと、何時間放置して ⌘R しても時間切れにならない。
+function save(touch){{
+  if(touch!==false) stamp=Date.now();
+  if(!hold) pos[cat]=anchor();       // 寄せ直している最中は触らない
   const open=[...document.querySelectorAll('tr details.dt[open]')]
     .map(d=>d.closest('tr').dataset.cp);
   try{{ sessionStorage.setItem(KEY,JSON.stringify(
-    {{q:q.value,cat:cat,sort:sort,top:top,off:off,y:scrollY,open:open}})); }}catch(e){{}}
+    {{q:q.value,cat:cat,sort:sort,open:open,pos:pos,t:stamp}})); }}catch(e){{}}
+}}
+// 目印の行が狙った位置に来るまで寄せ直す。画面外の行の高さは見積もりなので、
+// 実際に描かれるたびに位置が動く。t が無ければ先頭へ。
+function goTo(t){{
+  const r=t&&t.top&&rows.find(x=>x.dataset.cp===t.top&&x.style.display!=='none');
+  if(!r){{ scrollTo(0,0); hold=false; return; }}
+  hold=true;
+  let n=0,stop=false;
+  // 寄せ直しは 1 秒半ほど続くので、その間に自分でスクロールされたら譲る
+  const ac=new AbortController();
+  for(const ev of ['wheel','touchstart','keydown','pointerdown'])
+    addEventListener(ev,()=>{{stop=true;}},{{signal:ac.signal,passive:true}});
+  const go=()=>{{
+    if(stop||++n>90){{ hold=false; ac.abort(); save(false); return; }}
+    const d=r.getBoundingClientRect().top+(t.off||0);   // 0 になれば狙いどおり
+    if(Math.abs(d)>1) scrollTo(0,Math.max(0,scrollY+d));
+    requestAnimationFrame(go);
+  }};
+  requestAnimationFrame(go);
 }}
 function restore(){{
   let v=null;
   try{{ v=JSON.parse(sessionStorage.getItem(KEY)||'null'); }}catch(e){{}}
   if(!v){{ apply(); fold(); return; }}
-  hold=true;
   q.value=v.q||''; setCat(v.cat||'');
   if(v.sort&&v.sort!=='cp') setSort(v.sort);
   apply(); fold();
@@ -788,32 +814,25 @@ function restore(){{
     const r=rows.find(x=>x.dataset.cp===cp), d=r&&r.querySelector('details.dt');
     if(d) d.open=true;
   }}
-  // 画面外の行の高さは contain-intrinsic-size の見積もりなので、実際に
-  // 描かれるたびに位置が動く。目印の行が狙った位置に来るまで寄せ直す。
-  const r=v.top&&rows.find(x=>x.dataset.cp===v.top&&x.style.display!=='none');
-  if(!r){{ if(v.y) scrollTo(0,v.y); hold=false; return; }}
-  let n=0,stop=false;
-  // 寄せ直しは 1 秒半ほど続くので、その間に自分でスクロールされたら譲る
-  const give=()=>{{stop=true;}};
-  for(const ev of ['wheel','touchstart','keydown','pointerdown'])
-    addEventListener(ev,give,{{once:true,passive:true}});
-  const go=()=>{{
-    if(stop||++n>90){{ hold=false; return; }}
-    const d=r.getBoundingClientRect().top+(v.off||0);   // 0 になれば狙いどおり
-    if(Math.abs(d)>1) scrollTo(0,Math.max(0,scrollY+d));
-    requestAnimationFrame(go);
-  }};
-  requestAnimationFrame(go);
+  stamp=v.t||Date.now();
+  pos=(v.t&&Date.now()-v.t<KEEP&&v.pos)||{{}};
+  goTo(pos[cat]);
 }}
 q.addEventListener('input',()=>{{apply();save();}});
 for(const c of document.querySelectorAll('.chip'))
-  c.addEventListener('click',()=>{{setCat(c.dataset.cat);apply();save();}});
+  c.addEventListener('click',()=>{{
+    if(c.dataset.cat===cat) return;
+    save();                          // 今いる場所を、今のチップのぶんとして残す
+    setCat(c.dataset.cat); apply();
+    goTo(pos[cat]);                  // 前に見ていた場所へ。無ければ先頭
+    save();
+  }});
 for(const b of document.querySelectorAll('[data-sort]'))
   b.addEventListener('click',()=>{{setSort(b.dataset.sort);save();}});
 tb.addEventListener('toggle',save,true);
 let timer; addEventListener('scroll',()=>{{clearTimeout(timer);timer=setTimeout(save,150);}},
                             {{passive:true}});
-addEventListener('pagehide',save);
+addEventListener('pagehide',()=>save(false));
 restore();
 </script>
 </body></html>
