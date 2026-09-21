@@ -37,6 +37,12 @@ VIRT = ' <span class="virt">(仮想位置 — その字書には載っていな�
 # 「同=X <語釈>」のように語釈が続いているので、訳語表のほうで訳す。
 SAME_AS = re.compile(r"同[=「]([^」\s]+)」?")
 
+# 字義の中で「その字のことを言っている」箇所。原文も訳も、参照する字は
+# 「X」で囲むか、= の直後に置く形で書かれている。ここだけリンクにする
+# (訳の「気の巡りが通じる」のような普通の文まで拾うと、ただうるさい)。
+HAN = r"[\u3400-\u4DBF\u4E00-\u9FFF\U00020000-\U0003FFFF]"
+REF = re.compile(f"「({HAN})」|=({HAN})(?!{HAN})")
+
 
 # 1 字ぶんの行。狭い画面では表を崩してカードにするので、列ごとの中身に
 # それぞれ見出しを持たせてある (<thead> が消えても何の欄か分かるように)。
@@ -201,7 +207,7 @@ class Builder:
                 f"{html.escape(label)}</span>")
 
     # -- 本文中の字形 --------------------------------------------------------
-    def glyphs(self, text, escape=True, link=True):
+    def glyphs(self, text, escape=True, link=True, refs=False):
         """フォントが無いと豆腐になる字を GlyphWiki の SVG に差し替える。
 
         表の左端と同じ理屈。字義の中に出てくる字も拡張 B より後のものが多く、
@@ -213,20 +219,31 @@ class Builder:
         なる場所 (用例が丸ごと <a> に包まれるとき) と、押すと開閉してしまう
         <summary> の中では link=False で呼ぶ。
         """
+        # 「X」や =X で参照されている字の位置。字形に差し替えない字
+        # (基本ブロックの常用漢字など) も、ここに当たればリンクにする
+        at = set()
+        if refs and link:
+            for m in REF.finditer(text):
+                at.add(m.start(1) if m.group(1) else m.start(2))
         out = []
-        for ch in text:
+        for i, ch in enumerate(text):
             h = f"{ord(ch):x}"
+            if i in at and not needs_glyph(ch):
+                out.append(self.zi_link(ch, html.escape(ch)))
+                continue
             if needs_glyph(ch) and (GLYPHS / f"u{h}.svg").exists():
                 g = (f'<img class="ig" src="glyphs/u{h}.svg" alt="">'
                      f'<span class="sr">{html.escape(ch)}</span>')
-                out.append(
-                    f'<a class="igl" href="{ZITOOLS.format(enc=pct(ch))}" '
-                    f'target="_blank" rel="noopener" '
-                    f'title="U+{ord(ch):04X} を zi.tools で見る">{g}</a>'
-                    if link else g)
+                out.append(self.zi_link(ch, g, "igl") if link else g)
             else:
                 out.append(html.escape(ch) if escape else ch)
         return "".join(out)
+
+    @staticmethod
+    def zi_link(ch, body, cls="zl"):
+        return (f'<a class="{cls}" href="{ZITOOLS.format(enc=pct(ch))}" '
+                f'target="_blank" rel="noopener" '
+                f'title="U+{ord(ch):04X} を zi.tools で見る">{body}</a>')
 
     # -- zi.tools の字義 -----------------------------------------------------
     def zi_ja(self, text):
@@ -251,10 +268,10 @@ class Builder:
             return ""
         out = []
         for r in rows:
-            body = self.glyphs(r["def"])
+            body = self.glyphs(r["def"], refs=True)
             ja = self.zi_ja(r["def"])
             if ja:
-                body += f'<span class="ja">{self.glyphs(ja)}</span>'
+                body += f'<span class="ja">{self.glyphs(ja, refs=True)}</span>'
             body += f'<span class="zisrc">{html.escape(self.zi_source(r["src"]))}</span>'
             if r.get("note"):
                 body += f'<div class="zinote">{self.glyphs(r["note"])}</div>'
@@ -544,7 +561,14 @@ code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:v
    する使い方があるので <img> のままにして、暗い配色では反転させる */
 img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
 @media (prefers-color-scheme: dark) {{ img.ig {{ filter:invert(1) }} }}
-a.igl {{ text-decoration:none }}
+/* 字義の中で参照されている字は zi.tools へのリンクにする。1,300 か所を超えるので
+   青い下線では画面がうるさい。点線だけ引いて、押せることが分かる程度にする */
+a.zl {{ color:inherit; text-decoration:underline dotted;
+        text-decoration-color:var(--muted); text-underline-offset:.2em }}
+a.zl:hover {{ text-decoration-color:var(--accent) }}
+/* 中身が画像だと text-decoration が描かれないので、こちらは border で引く */
+a.igl {{ text-decoration:none; border-bottom:1px dotted var(--muted) }}
+a.igl:hover {{ border-bottom-color:var(--accent) }}
 a.igl:hover img.ig {{ opacity:.55 }}
 /* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
 .sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
