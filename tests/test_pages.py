@@ -70,6 +70,13 @@ class PageTest(unittest.TestCase):
     def test_rows_exist(self):
         self.assertGreater(len(self.rows), 10)
 
+    def test_lucky_controls(self):
+        """1 字ずつ引く操作列。数が多くて上から眺められないのはどの一覧も同じ。"""
+        for i in ("lucky", "solo", "nx", "prev", "quit", "pos"):
+            self.assertIn(f'id="{i}"', self.html, i)
+        # 既定は畳んである (.solo に on が付いて初めて出る)
+        self.assertIn('<div id="solo" class="solo">', self.html)
+
     def test_no_nested_anchors(self):
         """<a> の入れ子。字義の字をリンクにしたときに作りかけた。
 

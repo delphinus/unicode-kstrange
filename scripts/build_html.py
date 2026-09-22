@@ -738,6 +738,15 @@ h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
          cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }}
 .chip.on {{ background:var(--chip-on); color:var(--on-chip); border-color:var(--chip-on) }}
 #count {{ font-size:.85rem; color:var(--muted); margin-left:auto }}
+/* 1 字ずつ引くときの操作列。数千字を上から眺めるのは無理なので、
+   絞り込んだ集合から順不同で 1 字ずつ配る */
+.solo {{ display:none; margin:.6rem 0 0; gap:.5rem; align-items:center; flex-wrap:wrap }}
+.solo.on {{ display:flex }}
+.bar button.pri {{ background:var(--accent); color:var(--on-accent); border-color:var(--accent) }}
+#pos {{ font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums }}
+.keys {{ font-size:.78rem; color:var(--muted) }}
+.keys kbd {{ font:inherit; border:1px solid var(--line); border-radius:4px;
+             padding:0 .3rem; background:var(--surface) }}
 main {{ max-width:1500px; margin:0 auto; padding:0 2rem }}
 table {{ width:100%; border-collapse:collapse; background:var(--surface); margin-top:1.2rem;
          border:1px solid var(--line); table-layout:fixed }}
@@ -841,6 +850,7 @@ details.dt > summary {{ display:none }}
   .ctl {{ gap:.5rem }}
   .bar input {{ width:100%; max-width:none }}
   #count {{ margin-left:0 }}
+  .keys {{ display:none }}       /* 触る画面にキーの案内は要らない */
   main, footer {{ padding:0 1rem }}
   /* チップは 13 個あって折り返すと 3 行になる。貼り付けている帯が
      画面の高さを食うので、1 行にして横に送る */
@@ -903,7 +913,16 @@ details.dt > summary {{ display:none }}
     <input id="q" type="search" placeholder="検索 (コードポイント・書名・読み・意味…)">
     <button data-sort="cp" class="on">コードポイント順</button>
     <button data-sort="strokes">画数順</button>
+    <button id="lucky">ひとつずつ見る</button>
     <span id="count"></span>
+  </div>
+  <div id="solo" class="solo">
+    <button id="prev">← 前の字</button>
+    <button id="nx" class="pri">次の字 →</button>
+    <button id="quit">やめる</button>
+    <span id="pos"></span>
+    <span class="keys"><kbd>Space</kbd> / <kbd>→</kbd> 次へ &nbsp;<kbd>←</kbd> 前へ
+      &nbsp;<kbd>Esc</kbd> やめる</span>
   </div>
   {chips}
 </div>
@@ -963,13 +982,15 @@ UK-source の 3 通の提出文書は字ごとの一覧を Excel で抱えてい
 const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count');
 const rows=[...tb.rows];
 let cat='',sort='cp';
+let hits=[];                 // 直近の絞り込みに残った行。1 字ずつ引くときの母集団
 function apply(){{
-  const s=q.value.trim().toLowerCase(); let n=0;
-  for(const r of rows){{
-    const hit=(!s||r.dataset.search.includes(s))
-            &&(!cat||(r.dataset.cats||'').split(' ').includes(cat));
-    r.style.display=hit?'':'none'; if(hit)n++; }}
-  count.textContent=n+' / '+rows.length+' 字';
+  const s=q.value.trim().toLowerCase();
+  hits=rows.filter(r=>(!s||r.dataset.search.includes(s))
+                    &&(!cat||(r.dataset.cats||'').split(' ').includes(cat)));
+  count.textContent=hits.length+' / '+rows.length+' 字';
+  if(solo) return showOne();
+  const on=new Set(hits);
+  for(const r of rows) r.style.display=on.has(r)?'':'none';
 }}
 function setCat(v){{
   cat=v;
@@ -981,12 +1002,57 @@ function setSort(k){{
   rows.slice().sort((x,y)=>(+x.dataset[k])-(+y.dataset[k])).forEach(r=>tb.appendChild(r));
 }}
 
+// ── 1 字ずつ引く ─────────────────────────────────────────────
+// 数千字を上から順に眺めるのは無理なので、絞り込んだ集合を混ぜてから
+// 1 字ずつ配る。山札を配り切るまで同じ字は出ないので、押し続けても
+// 堂々巡りにならない。配り切ったら混ぜ直して最初から。
+const soloBar=document.getElementById('solo'),posEl=document.getElementById('pos'),
+      lucky=document.getElementById('lucky');
+let solo=null;               // {{deck:[コードポイント…], i:番号}}。off のときは null
+function deal(){{
+  const d=hits.map(r=>r.dataset.cp);
+  for(let i=d.length-1;i>0;i--){{ const j=Math.random()*(i+1)|0; [d[i],d[j]]=[d[j],d[i]]; }}
+  return {{deck:d,i:0}};
+}}
+function showOne(){{
+  // 絞り込みが変わって今の字が母集団から外れたら、配り直す
+  if(!solo.deck.length||!hits.some(r=>r.dataset.cp===solo.deck[solo.i])) solo=deal();
+  const cur=solo.deck[solo.i];
+  for(const r of rows){{
+    const on=r.dataset.cp===cur;
+    r.style.display=on?'':'none';
+    // 1 字しか出ていないのだから、狭い画面でも出典を畳む理由が無い
+    if(on) for(const d of r.querySelectorAll('details.dt')) d.open=true;
+  }}
+  posEl.textContent=solo.deck.length?(solo.i+1)+' 字目 / '+solo.deck.length:'0 字';
+}}
+function step(d){{
+  if(!solo) return;
+  const ok=new Set(hits.map(r=>r.dataset.cp));
+  let i=solo.i;
+  for(let n=0;n<solo.deck.length;n++){{
+    i+=d;
+    if(i>=solo.deck.length){{ solo=deal(); i=0; break; }}   // 配り切った
+    if(i<0){{ i=0; break; }}
+    if(ok.has(solo.deck[i])) break;      // 絞り込みから外れた字は飛ばす
+  }}
+  solo.i=i; showOne(); scrollTo(0,0); save();
+}}
+function setSolo(on){{
+  solo=on?(solo||deal()):null;
+  soloBar.classList.toggle('on',on);
+  lucky.classList.toggle('on',on);
+  for(const b of document.querySelectorAll('[data-sort]')) b.hidden=on;
+  fold(); apply();                 // fold が先。開くのは showOne の仕事
+  if(on) scrollTo(0,0);
+}}
+
 // 出典は <details open> で出しておいて、狭い画面のときだけ畳む。
 // CSS だけでやる手 (::details-content) は対応が新しく、外すと
 // 広い画面で開けなくなるので、失敗しても開いたままになるこちらにした。
 const narrow=matchMedia('(max-width: 900px)');
 function fold(){{ for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches; }}
-narrow.addEventListener('change',fold);
+narrow.addEventListener('change',()=>{{fold(); if(solo) showOne();}});
 
 // ⌘R したときに見た目を戻す。絞り込みも並べ替えもここでやっているので、
 // ブラウザ任せの復元 (フォームの値とスクロール位置だけ) では中身と食い違う。
@@ -1013,11 +1079,11 @@ function anchor(){{
 // 進めてしまうと、何時間放置して ⌘R しても時間切れにならない。
 function save(touch){{
   if(touch!==false) stamp=Date.now();
-  if(!hold) pos[cat]=anchor();       // 寄せ直している最中は触らない
+  if(!hold&&!solo) pos[cat]=anchor();   // 寄せ直している最中と 1 字ずつのときは触らない
   const open=[...document.querySelectorAll('tr details.dt[open]')]
     .map(d=>d.closest('tr').dataset.cp);
   try{{ sessionStorage.setItem(KEY,JSON.stringify(
-    {{q:q.value,cat:cat,sort:sort,open:open,pos:pos,t:stamp}})); }}catch(e){{}}
+    {{q:q.value,cat:cat,sort:sort,open:open,pos:pos,t:stamp,solo:solo}})); }}catch(e){{}}
 }}
 // 目印の行が狙った位置に来るまで寄せ直す。画面外の行の高さは見積もりなので、
 // 実際に描かれるたびに位置が動く。t が無ければ先頭へ。
@@ -1049,14 +1115,17 @@ function restore(){{
   setCat(cats.includes(v.cat)?v.cat:'');
   if(v.sort&&v.sort!=='cp'&&document.querySelector('[data-sort="'+v.sort+'"]'))
     setSort(v.sort);
-  apply(); fold();
-  if(narrow.matches&&v.open) for(const cp of v.open){{
+  // 1 字ずつ引いている途中なら、同じ字のまま戻す。山札ごと覚えてあるので
+  // 前後に辿った道も残る。
+  if(v.solo&&v.solo.deck&&v.solo.deck.length){{ solo=v.solo; setSolo(true); }}
+  else {{ apply(); fold(); }}
+  if(narrow.matches&&!solo&&v.open) for(const cp of v.open){{
     const r=rows.find(x=>x.dataset.cp===cp), d=r&&r.querySelector('details.dt');
     if(d) d.open=true;
   }}
   stamp=v.t||Date.now();
   pos=(v.t&&Date.now()-v.t<KEEP&&v.pos)||{{}};
-  goTo(pos[cat]);
+  if(!solo) goTo(pos[cat]);
 }}
 q.addEventListener('input',()=>{{apply();save();}});
 for(const c of document.querySelectorAll('.chip'))
@@ -1064,11 +1133,22 @@ for(const c of document.querySelectorAll('.chip'))
     if(c.dataset.cat===cat) return;
     save();                          // 今いる場所を、今のチップのぶんとして残す
     setCat(c.dataset.cat); apply();
-    goTo(pos[cat]);                  // 前に見ていた場所へ。無ければ先頭
+    if(!solo) goTo(pos[cat]);        // 前に見ていた場所へ。無ければ先頭
     save();
   }});
 for(const b of document.querySelectorAll('[data-sort]'))
   b.addEventListener('click',()=>{{setSort(b.dataset.sort);save();}});
+lucky.addEventListener('click',()=>{{setSolo(!solo);save();}});
+document.getElementById('nx').addEventListener('click',()=>step(1));
+document.getElementById('prev').addEventListener('click',()=>step(-1));
+document.getElementById('quit').addEventListener('click',()=>{{setSolo(false);save();}});
+addEventListener('keydown',e=>{{
+  if(!solo||e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.target.closest('input,textarea,select')) return;   // 検索の邪魔をしない
+  if(e.key==='ArrowRight'||e.key===' ') {{ e.preventDefault(); step(1); }}
+  else if(e.key==='ArrowLeft') {{ e.preventDefault(); step(-1); }}
+  else if(e.key==='Escape') {{ setSolo(false); save(); }}
+}});
 tb.addEventListener('toggle',save,true);
 let timer; addEventListener('scroll',()=>{{clearTimeout(timer);timer=setTimeout(save,150);}},
                             {{passive:true}});

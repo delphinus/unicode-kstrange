@@ -230,3 +230,128 @@ describe.if(READY)("コレクションをまたぐ", () => {
     await p.close();
   });
 });
+
+describe.if(READY)("1 字ずつ引く", () => {
+  /** 今出ている 1 字のコードポイント。 */
+  const only = () => {
+    const r = [...document.querySelectorAll("#tb tr")]
+      .filter((x) => (x as HTMLElement).style.display !== "none");
+    return { n: r.length, cp: (r[0]?.querySelector(".cp") as HTMLElement)?.textContent ?? null,
+             pos: document.getElementById("pos")?.textContent ?? "" };
+  };
+  const press = (p: Page, id: string) =>
+    p.evaluate((i) => (document.getElementById(i) as HTMLElement).click(), id);
+
+  test("押すたびに 1 字ずつ出て、同じ字は戻ってこない", async () => {
+    const p = await open("/kstrange/");
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    const first = await p.evaluate(only);
+    expect(first.n).toBe(1);
+    expect(first.pos).toBe("1 字目 / 828");
+
+    const seen = [first.cp];
+    for (let i = 0; i < 12; i++) {
+      await press(p, "nx");
+      await Bun.sleep(80);
+      const s = await p.evaluate(only);
+      expect(s.n).toBe(1);
+      expect(s.pos).toBe(`${i + 2} 字目 / 828`);
+      seen.push(s.cp);
+    }
+    // 山札を配り切るまで重複しない
+    expect(new Set(seen).size).toBe(13);
+    await p.close();
+  });
+
+  test("前の字に戻れる", async () => {
+    const p = await open("/kstrange/");
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    const a = (await p.evaluate(only)).cp;
+    await press(p, "nx");
+    await Bun.sleep(80);
+    const b = (await p.evaluate(only)).cp;
+    expect(b).not.toBe(a);
+    await press(p, "prev");
+    await Bun.sleep(80);
+    expect((await p.evaluate(only)).cp).toBe(a);
+    await p.close();
+  });
+
+  test("キーボードで送れる", async () => {
+    const p = await open("/kstrange/");
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    const a = (await p.evaluate(only)).cp;
+    await p.keyboard.press("ArrowRight");
+    await Bun.sleep(120);
+    const b = (await p.evaluate(only)).cp;
+    expect(b).not.toBe(a);
+    await p.keyboard.press("ArrowLeft");
+    await Bun.sleep(120);
+    expect((await p.evaluate(only)).cp).toBe(a);
+    // Esc でやめると全件に戻る
+    await p.keyboard.press("Escape");
+    await Bun.sleep(300);
+    expect((await p.evaluate(snapshot)).shown).toBe(828);
+    await p.close();
+  });
+
+  test("絞り込んだ中からだけ出す", async () => {
+    const p = await open("/kstrange/");
+    await clickChip(p, "S");
+    await Bun.sleep(300);
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    expect((await p.evaluate(only)).pos).toBe("1 字目 / 26");
+    // 出ている字が本当に S の字か
+    const ok = await p.evaluate(() => {
+      const r = [...document.querySelectorAll("#tb tr")]
+        .find((x) => (x as HTMLElement).style.display !== "none") as HTMLElement;
+      return (r.dataset.cats || "").split(" ").includes("S");
+    });
+    expect(ok).toBe(true);
+    await p.close();
+  });
+
+  test("引いている途中で再読み込みしても同じ字", async () => {
+    const p = await open("/kstrange/");
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    await press(p, "nx");
+    await press(p, "nx");
+    await Bun.sleep(200);
+    const before = await p.evaluate(only);
+    await p.reload({ waitUntil: "load" });
+    await Bun.sleep(1200);
+    expect(await p.evaluate(only)).toEqual(before);
+    await p.close();
+  });
+
+  test("やめると元の一覧に戻る", async () => {
+    const p = await open("/kstrange/");
+    await press(p, "lucky");
+    await Bun.sleep(300);
+    expect((await p.evaluate(only)).n).toBe(1);
+    await press(p, "quit");
+    await Bun.sleep(300);
+    const s = await p.evaluate(snapshot);
+    expect(s.shown).toBe(828);
+    expect(s.sort).toBe("コードポイント順");
+    await p.close();
+  });
+
+  test("どの一覧にもボタンがある", async () => {
+    for (const [path, total] of [["/uk/", 3409], ["/u-source/", 885],
+                                 ["/spoofing/", 353]] as const) {
+      const p = await open(path);
+      await press(p, "lucky");
+      await Bun.sleep(400);
+      const s = await p.evaluate(only);
+      expect(s.n).toBe(1);
+      expect(s.pos).toBe(`1 字目 / ${total}`);
+      await p.close();
+    }
+  }, 30_000);
+});
