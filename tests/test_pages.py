@@ -207,6 +207,37 @@ class USourceTest(PageTest):
                              f"IDS の記号が差し替えられていない: {left[:12]}")
 
 
+class SpoofingTest(PageTest):
+    slug, category = "spoofing", "all"
+
+    def test_every_row_shows_its_partner(self):
+        """相手を並べないと比べようがないので、全行に出ていること。"""
+        for r in self.rows:
+            self.assertIn('class="pair"', r, "相手が出ていない行がある")
+
+    def test_partner_column_is_never_hidden(self):
+        """狭い画面でも相手の列を隠さない。
+
+        提案文書の列は中身が無い行が多いので狭い画面では隠しているが、
+        ここは必ず中身がある。同じ仕組みを流用すると丸ごと消えてしまう。
+        """
+        self.assertNotIn('class="ev nothing"', self.html)
+
+    def test_both_sides_use_the_same_glyph_source(self):
+        """本体と相手で字形の出所が違うと、線の太さが揃わず比べられない。"""
+        for m in re.finditer(r'<img class="pg" src="([^"]+)"', self.html):
+            self.assertTrue(m.group(1).startswith("../glyphs/"), m.group(1))
+
+    def test_relation_is_closed(self):
+        """相互に登録されていること (片側だけだと相手から辿れない)。"""
+        from common import spoofing_pairs, unihan
+        pairs = spoofing_pairs(unihan())
+        for cp, ts in pairs.items():
+            for t in ts:
+                self.assertIn(t, pairs, f"{cp} の相手 {t} に登録が無い")
+                self.assertIn(cp, pairs[t], f"{t} から {cp} へ戻れない")
+
+
 def load_tests(loader, tests, pattern):
     """PageTest そのものは動かさない (子クラスだけ)。"""
     keep = unittest.TestSuite()

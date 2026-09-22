@@ -65,7 +65,7 @@ check-utn43:
 ## 生成物を消す (取得済みの入力は残す)
 clean:
 	rm -f docs/index.html
-	rm -rf docs/glyphs docs/fonts docs/kstrange docs/uk
+	rm -rf docs/glyphs docs/fonts docs/kstrange docs/uk docs/spoofing
 
 ## 取得済みの入力も消す
 distclean: clean

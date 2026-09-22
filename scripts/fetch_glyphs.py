@@ -13,8 +13,8 @@ import time
 import urllib.error
 import urllib.request
 
-from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, targets, toml,
-                    unihan, usource)
+from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, spoofing_pairs,
+                    targets, toml, unihan, usource)
 
 URL = "https://glyphwiki.org/glyph/u{hex}.svg"
 
@@ -51,7 +51,14 @@ def main():
     GLYPHS.mkdir(parents=True, exist_ok=True)
     cps = targets(unihan(), args.category)
     log(f"カテゴリ {args.category}: {len(cps)} 字")
-    extra = [c for c in mentioned(texts_in_page()) if c not in set(cps)]
+    # 見間違えやすい字の一覧は本体と相手を並べて見比べるページ。片方だけ
+    # フォント任せだと太さが揃わず比べられないので、基本ブロックの字も用意する。
+    uni = unihan()
+    pairs = spoofing_pairs(uni)
+    want = set(mentioned(texts_in_page()))
+    want |= set(pairs) | {t for ts in pairs.values() for t in ts}
+    extra = [c for c in sorted(want, key=lambda x: int(x[2:], 16))
+             if c not in set(cps)]
     if extra:
         log(f"本文中に出てくる字 (表の対象外): {len(extra)} 字")
         cps = cps + extra

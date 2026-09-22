@@ -14,8 +14,8 @@ import pathlib
 import re
 
 from common import (CACHE, DATA, DOCS, GLYPHS, UNICODE_VERSION, UTN43_REVISION,
-                    blocks, log, manifest, needs_glyph, targets, toml, unihan,
-                    usource)
+                    blocks, log, manifest, needs_glyph, spoofing_pairs, targets,
+                    toml, unihan, usource)
 
 # 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
 # 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
@@ -81,7 +81,7 @@ TR = """
     </details>
   </td>
   <td class="ev{evnone}">
-    <div class="h evh">提案文書に記録された用例</div>{note}</td>
+    <div class="h evh">{evhead}</div>{note}</td>
 </tr>"""
 
 
@@ -99,6 +99,7 @@ class Builder:
         self.slug = slug
         self.spec = next(c for c in toml("collections.toml")["collection"]
                          if c["slug"] == slug)
+        self.evhead = self.spec.get("evhead", "提案文書に記録された用例")
         self.uni = unihan()
         self.blocks = blocks()
         self.usrc = usource()
@@ -120,6 +121,7 @@ class Builder:
         self.wiktionary = json.loads(wk.read_text()) if wk.exists() else {}
         if not self.wiktionary:
             log("  cache/wiktionary.json が無いので Wiktionary のリンクは付けない")
+        self.pairs = spoofing_pairs(self.uni)
         self.uk = self.cache_json("uk_source.json", "UK-source の用例")
         self.l2 = self.cache_json("l2docs.json", "UTC 文書の題名")
         self.zi = self.cache_json("zi_tools.json", "zi.tools の字義")
@@ -385,6 +387,31 @@ class Builder:
                      + "".join(f"<li>{i}</li>" for i in items) + "</ul>")
         return f'<div class="note"><b>{sid}</b>{body}</div>'
 
+    def partner_html(self, cp):
+        """見間違えやすい相手。並べて出さないと比べようがない。
+
+        字形は本体と同じく GlyphWiki の SVG。片方だけフォント任せにすると
+        線の太さが揃わず、どこが違うのかが分からなくなる。
+        """
+        out = []
+        for t in self.pairs.get(cp, []):
+            v = self.uni.get(t, {})
+            lhex = t[2:].lower()
+            g = (f'<img class="pg" src="../glyphs/u{lhex}.svg" alt="{t}">'
+                 if (GLYPHS / f"u{lhex}.svg").exists() else "")
+            rd = " / ".join(f"{lab} {html.escape(v[k])}" for k, lab in
+                            (("kJapanese", "和"), ("kMandarin", "官"))
+                            if v.get(k))
+            df = html.escape(v.get("kDefinition", ""))
+            out.append(
+                f'<div class="pair">{g}<div class="pt">'
+                f'<div class="cp">{t}</div>'
+                + (f'<div class="rd">{rd}</div>' if rd else "")
+                + (f'<div class="df">{df}</div>' if df else "")
+                + f'<div class="lk">{a(ZITOOLS.format(enc=pct(chr(int(t[2:], 16)))), "zi.tools")}'
+                f' · {a(UNIHAN.format(hex=t[2:]), "Unihan")}</div></div></div>')
+        return "".join(out) or '<span class="none">相手の記載なし</span>'
+
     # -- 1 件ぶん (まだ符号化されていない登録) --------------------------------
     def row_usource(self, uid):
         """USourceData.txt の 1 行。コードポイントが無いので Unihan は引けない。
@@ -412,7 +439,7 @@ class Builder:
             glyph=f'<span class="ids">{ids}</span>',
             block=f"部首 {rad}", strokes_txt=res or "0", cats=cats,
             readings="", df="", links=" · ".join(links),
-            summary=html.escape(v.get("comment") or st),
+            summary=html.escape(v.get("comment") or st), evhead=self.evhead,
             srcbody=src, evnone="", note=note)
 
     # -- 1 字ぶん -----------------------------------------------------------
@@ -460,6 +487,8 @@ class Builder:
             body = self.glyphs(n["text"].strip(), escape=False)
             note = (f'<div class="note"><b>{head}</b><p>{body}</p>'
                     + (f'<ul class="ev">{ev}</ul>' if ev else "") + "</div>")
+        elif self.spec.get("ev") == "partner":
+            note = self.partner_html(cp)
         else:
             # 手で書いたメモが無い字は、提出文書の表と USourceData.txt から組み立てる
             note = (self.uk_note(v.get("kIRG_UKSource", ""))
@@ -472,9 +501,11 @@ class Builder:
         zi = self.zi_html(cp)
         summary = self.zi_summary(cp)
         # 提案文書まで辿れていない字は、狭い画面では列ごと隠す (761 字が同じ文言)
-        evnone = " nothing" if cp not in self.notes and not (
-            self.uk_note(v.get("kIRG_UKSource", ""))
-            or self.u_note(v.get("kIRG_USource", ""))) else ""
+        # 相手を並べる一覧では、この列に必ず中身があるので隠さない
+        evnone = "" if self.spec.get("ev") == "partner" else (
+            " nothing" if cp not in self.notes and not (
+                self.uk_note(v.get("kIRG_UKSource", ""))
+                or self.u_note(v.get("kIRG_USource", ""))) else "")
         search = " ".join([cp, self.block_of(cp), v["kTotalStrokes"],
                            v.get("kDefinition", ""), v.get("kJapanese", ""),
                            v.get("kMandarin", ""), v.get("kStrange", ""),
@@ -495,6 +526,7 @@ class Builder:
             df=('<div class="df">' + html.escape(v["kDefinition"]) + "</div>"
                 if v.get("kDefinition") else ""),
             links=" · ".join(links), summary=summary, cites=cites, dicts=dicts,
+            evhead=self.evhead,
             srcbody=('<div class="h">IRG ソース参照</div>'
                      f"<ul>{cites}</ul>"
                      '<div class="h">字書索引</div>'
@@ -544,6 +576,8 @@ class Builder:
 
     def select(self):
         """このコレクションに載せる字。"""
+        if self.spec.get("select") == "spoofing":
+            return sorted(self.pairs, key=lambda x: int(x[2:], 16))
         if self.spec.get("select") == "usource":
             # まだ符号化されていない登録。コードポイントが無いので、
             # ここだけ Unihan ではなく USourceData.txt の識別子を並べる。
@@ -556,6 +590,8 @@ class Builder:
 
     def facets(self, cp):
         """絞り込みの分類。kStrange はカテゴリ、UK-source は提出した作業集合。"""
+        if self.spec.get("facet") == "block":
+            return [self.block_of(cp)]
         if self.spec.get("facet") == "status":
             return [self.status_ja(self.usrc[cp]["status"])]
         if self.spec.get("facet") == "ukdoc":
@@ -568,7 +604,12 @@ class Builder:
         if self.spec.get("facet") == "ukdoc":
             sid = self.uni[cp].get("kIRG_UKSource", "")
             return f'<span class="cat">{html.escape(sid)}</span>' if sid else ""
-        return "".join(self.cat_badge(c) for c in self.uni[cp]["kStrange"].split())
+        if self.spec.get("select") == "spoofing":
+            # 相手が 2 つ以上あるときだけ数を出す (344 字は 1 対 1)
+            n = len(self.pairs.get(cp, []))
+            return f'<span class="cat">相手 {n}</span>' if n > 1 else ""
+        return "".join(self.cat_badge(c)
+                       for c in self.uni[cp].get("kStrange", "").split())
 
     def glyph_cell(self, cp, lhex):
         """字形。kStrange は GlyphWiki の SVG、UK-source は提出文書の添付フォント。"""
@@ -598,7 +639,13 @@ class Builder:
         common = ("🔎 が付いたリンクは原典の該当箇所。字義や用例の<b>文中</b>に出てくる"
                   "拡張 A 以降の字は GlyphWiki の SVG に差し替えてある "
                   "(選択してコピーすれば字のまま取れる)。")
-        if self.spec.get("select") == "usource":
+        if self.spec.get("select") == "spoofing":
+            title, catname = self.spec["title"], ""
+            lead = (f"取り違えの恐れがあるとして Unicode が組で指定した {len(cps):,} 字。"
+                    f"右の列に相手を並べてある。字形はどちらも GlyphWiki の SVG で、"
+                    f"片方だけフォント任せにすると線の太さが揃わず比べられないため。"
+                    f"関係は相互に登録されていて、この {len(cps):,} 字で閉じている。")
+        elif self.spec.get("select") == "usource":
             title, catname = self.spec["title"], ""
             lead = (f"UAX #45 に登録されたが、まだ符号化されていない {len(cps):,} 件。"
                     f"却下されたもの、既存の字の異体と判断されたもの、先送りされたもの、"
@@ -625,6 +672,7 @@ class Builder:
         self.page_title = title
         return TEMPLATE.format(title=title, lead=lead, nav=self.nav_html(),
                                count=len(cps), rows=rows, now=now, chips=chips,
+                               evhead=self.evhead,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
 
@@ -712,6 +760,11 @@ td.g {{ text-align:center }} td.g > img {{ width:84px; height:84px }}
 .uk {{ font-size:84px; line-height:1.05 }}
 /* まだ符号化されていない字は画像を出せないので、構成式をそのまま見せる */
 .ids {{ font-size:1.5rem; line-height:1.4; word-break:break-all }}
+/* 見間違えやすい相手。本体と同じ大きさで並べないと比べられない */
+.pair {{ display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.8rem }}
+img.pg {{ width:84px; height:84px; flex:0 0 auto }}
+@media (prefers-color-scheme: dark) {{ img.pg {{ filter:invert(1) }} }}
+.pt {{ min-width:0 }}
 .uk2015 {{ font-family:uk2015 }}
 .uk2017 {{ font-family:uk2017 }}
 .uk2021 {{ font-family:uk2021 }}
@@ -808,6 +861,7 @@ details.dt > summary {{ display:none }}
         overflow-wrap:anywhere }}   /* 長い書誌や URL で横に溢れさせない */
   td.g > img {{ width:56px; height:56px }}
   .uk {{ font-size:56px }}
+  img.pg {{ width:56px; height:56px }}
   .ids {{ font-size:1.2rem }}
   /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
   td.id .cp, td.id .sub {{ display:inline }}
@@ -856,7 +910,7 @@ details.dt > summary {{ display:none }}
 <main>
 <table>
 <colgroup><col class="c-g"><col class="c-id"><col class="c-src"><col></colgroup>
-<thead><tr><th>字形</th><th>字</th><th>ソース参照・字書索引</th><th>提案文書に記録された用例</th></tr></thead>
+<thead><tr><th>字形</th><th>字</th><th>ソース参照・字書索引</th><th>{evhead}</th></tr></thead>
 <tbody id="tb">{rows}</tbody>
 </table>
 </main>

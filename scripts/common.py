@@ -138,6 +138,23 @@ def needs_glyph(ch: str) -> bool:
             or 0x20000 <= n <= 0x3FFFF)
 
 
+def spoofing_pairs(uni) -> dict[str, list[str]]:
+    """見間違えやすい字 → その相手。kSpoofingVariant を読む。
+
+    値は「U+340B」や「U+2B7E6<kMatthews」のように、コードポイントの後ろに
+    出所が付くことがある。相互に登録されていて、353 字で閉じている。
+    """
+    import re as _re
+    out = {}
+    for cp, v in uni.items():
+        val = v.get("kSpoofingVariant")
+        if not val:
+            continue
+        out[cp] = [f"U+{m[1]}" for t in val.split()
+                   if (m := _re.match(r"U\+([0-9A-F]+)", t))]
+    return out
+
+
 def mentioned(texts) -> list[str]:
     """本文中に出てくる、字形が要る字を U+XXXX の形で返す。
 
