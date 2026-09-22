@@ -71,6 +71,29 @@ class PageTest(unittest.TestCase):
     def test_rows_exist(self):
         self.assertGreater(len(self.rows), 10)
 
+    def test_shows_the_radical(self):
+        """部首を出す。番号だけでなく字も添える。
+
+        74 (月) と 130 (肉) のように、同じ形に見えて部首だけが違う組がある。
+        番号だけでは読み手が引けないので、字のほうも並べる。
+        """
+        n = sum(1 for r in self.rows if re.search(r"部首 \d+'? .", r))
+        self.assertGreater(n / len(self.rows), 0.9, "部首の字が出ていない行が多い")
+
+    def test_definitions_are_translated(self):
+        """kDefinition は英語なので、訳を並べて出す。
+
+        この表で唯一「読む」ところが英語のままだと意味を取るのに手間が掛かる。
+        """
+        from build_html import Builder
+        b = Builder(self.category, self.slug)
+        miss = b.untranslated_unihan(b.select())
+        self.assertEqual(miss, [], f"訳の無い kDefinition が {len(miss)} 件")
+        # 原文と訳が両方出ていること
+        got = sum(1 for r in self.rows if 'class="df"' in r)
+        ja = sum(1 for r in self.rows if 'class="dfja"' in r)
+        self.assertEqual(got, ja, "原文だけで訳の無い行がある")
+
     def test_lucky_controls(self):
         """1 字ずつ引く操作列。数が多くて上から眺められないのはどの一覧も同じ。"""
         for i in ("lucky", "solo", "nx", "prev", "quit", "pos"):
@@ -270,6 +293,21 @@ class SpoofingTest(PageTest):
         """本体と相手で字形の出所が違うと、線の太さが揃わず比べられない。"""
         for m in re.finditer(r'<img class="pg" src="([^"]+)"', self.html):
             self.assertTrue(m.group(1).startswith("../glyphs/"), m.group(1))
+
+    def test_partner_shows_radical_and_translation(self):
+        """相手の欄にも部首と訳を出す。ここが比べる場所なので、本体と同じだけ
+        出ていないと違いが見えない。
+
+        U+3B35 と U+80F6 は字形が 1 バイトも違わず、部首 (74 月 / 130 肉) と
+        字義でしか見分けが付かない。
+        """
+        r = next(x for x in self.rows if f'data-cp="{0x3B35}"' in x)
+        ev = re.search(r'<td class="ev">(.*?)</td>', r, re.S).group(1)
+        self.assertIn("部首 130 肉", ev)
+        self.assertIn("にかわ", ev)
+        # 本体のほうは 74 月
+        idc = re.search(r'<td class="id">(.*?)</td>', r, re.S).group(1)
+        self.assertIn("部首 74 月", idc)
 
     def test_relation_is_closed(self):
         """相互に登録されていること (片側だけだと相手から辿れない)。"""

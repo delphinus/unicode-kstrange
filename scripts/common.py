@@ -25,6 +25,7 @@ INPUTS = {
     "Unihan.zip": f"https://www.unicode.org/Public/{UNICODE_VERSION}/ucd/Unihan.zip",
     "Blocks.txt": f"https://www.unicode.org/Public/{UNICODE_VERSION}/ucd/Blocks.txt",
     "USourceData.txt": f"https://www.unicode.org/Public/{UNICODE_VERSION}/ucd/USourceData.txt",
+    "CJKRadicals.txt": f"https://www.unicode.org/Public/{UNICODE_VERSION}/ucd/CJKRadicals.txt",
     # UTN #43 の PDF は check_utn43.py (任意) でしか使わない
     f"{UTN43_REVISION}.pdf": f"https://www.unicode.org/notes/tn43/{UTN43_REVISION}.pdf",
 }
@@ -115,6 +116,25 @@ def usource() -> dict[str, dict]:
         f = line.split(";")
         out[f[0]] = {"status": f[1], "cp": f[2], "rs": f[3], "ids": f[5],
                      "sources": f[6], "comment": f[7]}
+    return out
+
+
+def radicals() -> dict[str, str]:
+    """部首番号 → その部首の字。kRSUnicode の 74.6 の 74 を引くための表。
+
+    番号だけでは 74 (月) と 130 (肉) の区別が読み手に付かない。同じ形に見える
+    字がこの 2 つに分かれていることがあるので、字のほうを添える。
+
+    3 列目 (その部首だけでできた統合漢字) を使う。2 列目は康熙部首ブロックの
+    記号で、持っていないフォントがある。簡体字の部首は番号に ' が付く
+    (120' = 纟)。kRSUnicode 側も同じ書き方なのでそのまま引ける。
+    """
+    out = {}
+    for line in fetch("CJKRadicals.txt").read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or ";" not in line:
+            continue
+        num, _, uni = (f.strip() for f in line.split(";"))
+        out[num] = chr(int(uni, 16))
     return out
 
 

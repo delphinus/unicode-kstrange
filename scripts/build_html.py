@@ -14,8 +14,8 @@ import pathlib
 import re
 
 from common import (CACHE, DATA, DOCS, GLYPHS, UNICODE_VERSION, UTN43_REVISION,
-                    blocks, log, manifest, needs_glyph, spoofing_pairs, targets,
-                    toml, unihan, usource)
+                    blocks, log, manifest, needs_glyph, radicals, spoofing_pairs,
+                    targets, toml, unihan, usource)
 
 # 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
 # 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
@@ -103,6 +103,7 @@ class Builder:
         self.uni = unihan()
         self.blocks = blocks()
         self.usrc = usource()
+        self.rad = radicals()
         self.cats = toml("categories.toml")
         self.srcmap = toml("irg_sources.toml")["prefix"]
         self.books = toml("books.toml")
@@ -115,6 +116,9 @@ class Builder:
                      if (DATA / "zi_tools_ja.toml").exists() else {})
         if not self.zija:
             log("  data/zi_tools_ja.toml が無いので字義は原文のまま出す")
+        # Unihan の kDefinition の訳。こちらは Unicode License v3 なので
+        # リポジトリに入れてある。
+        self.unija = toml("unihan_ja.toml")["ja"]
         self.prefixes = sorted(self.srcmap, key=len, reverse=True)
         # 英語版 Wiktionary に項目がある字 (fetch_wiktionary.py が作る)
         wk = CACHE / "wiktionary.json"
@@ -274,6 +278,20 @@ class Builder:
         m = SAME_AS.fullmatch(text)
         return f"「{m[1]}」に同じ" if m else ""
 
+    def definition(self, en):
+        """kDefinition。英語のままだと意味を取るのに手間が掛かるので訳を添える。
+
+        原文も残す。訳は data/unihan_ja.toml で、Unihan を上げて新しい語義が
+        来たら訳の無いものとして数え上げる。
+        """
+        if not en:
+            return ""
+        out = f'<div class="df">{html.escape(en)}</div>'
+        ja = self.unija.get(en)
+        if ja:
+            out += f'<div class="dfja">{self.glyphs(ja)}</div>'
+        return out
+
     def zi_source(self, tag):
         """zi.tools の出典タグ → 出典名。IRG のソース接頭辞と重なるものが多い。"""
         if tag in self.zisrc:
@@ -402,12 +420,15 @@ class Builder:
             rd = " / ".join(f"{lab} {html.escape(v[k])}" for k, lab in
                             (("kJapanese", "和"), ("kMandarin", "官"))
                             if v.get(k))
-            df = html.escape(v.get("kDefinition", ""))
+            # 比べるための列なので、本体の欄と同じものを出す。部首が違うだけの
+            # 組 (74 月 と 130 肉 など) は、部首を並べないと違いが見えない。
+            sub = self.radical(v.get("kRSUnicode"))
             out.append(
                 f'<div class="pair">{g}<div class="pt">'
                 f'<div class="cp">{t}</div>'
+                + (f'<div class="sub">{sub}</div>' if sub else "")
                 + (f'<div class="rd">{rd}</div>' if rd else "")
-                + (f'<div class="df">{df}</div>' if df else "")
+                + self.definition(v.get("kDefinition"))
                 + f'<div class="lk">{a(ZITOOLS.format(enc=pct(chr(int(t[2:], 16)))), "zi.tools")}'
                 f' · {a(UNIHAN.format(hex=t[2:]), "Unihan")}</div></div></div>')
         return "".join(out) or '<span class="none">相手の記載なし</span>'
@@ -463,13 +484,15 @@ class Builder:
         src = (f'<div class="h">出典</div><ul>{self.usource_items(uid)}</ul>')
         cats = (f'<span class="cat" title="{html.escape(STATUS_TIP.get(st, ""))}">'
                 f"{st}</span>")
-        search = " ".join([uid, st, v["ids"], v["rs"], v.get("sources", ""),
+        search = " ".join([uid, st, v["ids"], v["rs"], self.radical(v["rs"]),
+                           v.get("sources", ""),
                            v.get("comment", ""), re.sub("<[^>]+>", " ", note)]).lower()
         return TR.format(
             search=html.escape(search), strokes=int(res or 0),
             n=int(re.sub(r"\D", "", uid) or 0), catkeys=st, cp=uid,
             glyph=glyph,
-            block=f"部首 {rad}", strokes_txt=res or "0", cats=cats,
+            block=self.radical(v["rs"]) or f"部首 {rad}",
+            strokes_txt=res or "0", cats=cats,
             readings="", df="", links=" · ".join(links),
             summary=html.escape(v.get("comment") or st), evhead=self.evhead,
             srcbody=src, evnone="", note=note)
@@ -539,7 +562,10 @@ class Builder:
                 self.uk_note(v.get("kIRG_UKSource", ""))
                 or self.u_note(v.get("kIRG_USource", ""))) else "")
         search = " ".join([cp, self.block_of(cp), v["kTotalStrokes"],
-                           v.get("kDefinition", ""), v.get("kJapanese", ""),
+                           self.radical(v.get("kRSUnicode")),
+                           v.get("kDefinition", ""),
+                           self.unija.get(v.get("kDefinition", ""), ""),
+                           v.get("kJapanese", ""),
                            v.get("kMandarin", ""), v.get("kStrange", ""),
                            v.get("kIRG_UKSource", ""),
                            re.sub("<[^>]+>", " ", cites),
@@ -552,11 +578,12 @@ class Builder:
             search=html.escape(search), strokes=int(v["kTotalStrokes"]),
             n=int(cp[2:], 16), catkeys=catkeys, cp=cp,
             glyph=self.glyph_cell(cp, lhex),
-            block=self.block_of(cp), strokes_txt=v["kTotalStrokes"], cats=cats,
+            block=" · ".join(x for x in (self.block_of(cp),
+                                         self.radical(v.get("kRSUnicode"))) if x),
+            strokes_txt=v["kTotalStrokes"], cats=cats,
             readings=('<div class="rd">' + " / ".join(readings) + "</div>"
                       if readings else ""),
-            df=('<div class="df">' + html.escape(v["kDefinition"]) + "</div>"
-                if v.get("kDefinition") else ""),
+            df=self.definition(v.get("kDefinition")),
             links=" · ".join(links), summary=summary, cites=cites, dicts=dicts,
             evhead=self.evhead,
             srcbody=('<div class="h">IRG ソース参照</div>'
@@ -586,6 +613,12 @@ class Builder:
         """訳語表に載っていない字義。取り直したあと足すべきものが分かる。"""
         return sorted({r["def"] for cp in cps for r in self.zi.get(cp, [])
                        if r.get("def") and not self.zi_ja(r["def"])})
+
+    def untranslated_unihan(self, cps):
+        """訳の無い kDefinition。Unihan を上げたときに増えるので数える。"""
+        return sorted({d for cp in cps
+                       if (d := self.uni.get(cp, {}).get("kDefinition"))
+                       and d not in self.unija})
 
     def nav_html(self):
         """ハブと他のコレクションへの行。画面の上に貼り付けてある。
@@ -647,6 +680,18 @@ class Builder:
         return "".join(self.cat_badge(c)
                        for c in self.uni[cp].get("kStrange", "").split())
 
+    def radical(self, rs):
+        """kRSUnicode (74.6 / 120'.3) から「部首 74 月」を作る。
+
+        番号だけでは読み手が引けない。同じ形に見えて部首だけが違う組
+        (74 月 と 130 肉 など) があるので、字を添えないと見分けが付かない。
+        """
+        num = (rs or "").partition(".")[0]
+        if not num:
+            return ""
+        ch = self.rad.get(num, "")
+        return f"部首 {num}{' ' + ch if ch else ''}"
+
     def glyph_cell(self, cp, lhex):
         """字形。kStrange は GlyphWiki の SVG、UK-source は提出文書の添付フォント。"""
         if self.spec.get("glyph") == "ukfont":
@@ -660,6 +705,10 @@ class Builder:
 
     def build(self):
         cps = self.select()
+        miss = self.untranslated_unihan(cps)
+        if miss:
+            log(f"  訳の無い kDefinition が {len(miss)} 件ある "
+                f"(data/unihan_ja.toml に足す): {miss[0]}")
         if self.zi:
             miss = self.untranslated(cps)
             if miss:
@@ -833,6 +882,8 @@ img.pg { width:84px; height:84px; flex:0 0 auto }
         padding:.05rem .35rem; margin-right:.25rem; cursor:help }
 .rd { font-size:.8rem; margin-top:.3rem }
 .df { font-size:.8rem; color:var(--soft); font-style:italic; margin-top:.2rem }
+/* kDefinition の訳。原文と並べる。読むのはこちらなので斜体にしない */
+.dfja { font-size:.82rem; color:var(--text); margin-top:.1rem }
 .lk { font-size:.78rem; margin-top:.5rem; line-height:2 }
 a { color:var(--accent) }
 .h { font-size:.72rem; color:var(--muted); font-weight:600; margin:.2rem 0 .1rem; letter-spacing:.04em }
