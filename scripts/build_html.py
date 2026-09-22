@@ -672,7 +672,7 @@ class Builder:
         self.page_title = title
         return TEMPLATE.format(title=title, lead=lead, nav=self.nav_html(),
                                count=len(cps), rows=rows, now=now, chips=chips,
-                               evhead=self.evhead,
+                               evhead=self.evhead, slug=self.slug,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
 
@@ -991,7 +991,10 @@ narrow.addEventListener('change',fold);
 // ⌘R したときに見た目を戻す。絞り込みも並べ替えもここでやっているので、
 // ブラウザ任せの復元 (フォームの値とスクロール位置だけ) では中身と食い違う。
 // head で scrollRestoration を manual にしてあるのはそのため。自分で覚える。
-const KEY='kstrange:view';
+// コレクションごとに分ける。1 つの鍵を使い回していたため、kStrange で
+// カテゴリ S を選んだ状態が UK-source でも復元され、そのチップが無いので
+// 1 件も出なくなっていた。
+const KEY='kanji:{slug}:view';
 // チップごとの読みかけの位置は、しばらく経ったら捨てる。半日前に見ていた
 // 途中に連れ戻されるより、先頭から始めたほうがよい。
 const KEEP=30*60*1000;
@@ -1039,8 +1042,13 @@ function restore(){{
   let v=null;
   try{{ v=JSON.parse(sessionStorage.getItem(KEY)||'null'); }}catch(e){{}}
   if(!v){{ apply(); fold(); return; }}
-  q.value=v.q||''; setCat(v.cat||'');
-  if(v.sort&&v.sort!=='cp') setSort(v.sort);
+  q.value=v.q||'';
+  // 鍵を分けたうえで、念のため無いものは無視する。作り直しで分類が
+  // 変わっても、古い状態で 0 件にならないように。
+  const cats=[...document.querySelectorAll('.chip')].map(c=>c.dataset.cat);
+  setCat(cats.includes(v.cat)?v.cat:'');
+  if(v.sort&&v.sort!=='cp'&&document.querySelector('[data-sort="'+v.sort+'"]'))
+    setSort(v.sort);
   apply(); fold();
   if(narrow.matches&&v.open) for(const cp of v.open){{
     const r=rows.find(x=>x.dataset.cp===cp), d=r&&r.querySelector('details.dt');

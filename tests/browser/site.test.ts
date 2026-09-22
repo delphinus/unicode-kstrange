@@ -123,9 +123,9 @@ describe.if(READY)("kStrange の一覧", () => {
     await p.evaluate(() => scrollTo(0, 5000));
     await Bun.sleep(700);
     await p.evaluate(() => {
-      const v = JSON.parse(sessionStorage.getItem("kstrange:view")!);
+      const v = JSON.parse(sessionStorage.getItem("kanji:kstrange:view")!);
       v.t = Date.now() - 31 * 60 * 1000;
-      sessionStorage.setItem("kstrange:view", JSON.stringify(v));
+      sessionStorage.setItem("kanji:kstrange:view", JSON.stringify(v));
       (Storage.prototype as { setItem: unknown }).setItem = () => {};  // 離脱時の保存を止める
     });
     await p.reload({ waitUntil: "load" });
@@ -191,6 +191,42 @@ describe.if(READY)("UK-source", () => {
     expect(fonts).toEqual(expect.arrayContaining(
       ["uk2015:loaded", "uk2017:loaded", "uk2021:loaded"]));
     expect(failed).toEqual([]);
+    await p.close();
+  });
+});
+
+describe.if(READY)("コレクションをまたぐ", () => {
+  test("絞り込んだまま別の一覧へ行っても、全件が出る", async () => {
+    // 覚える場所を 1 つの鍵で共有していたため、kStrange でカテゴリ S を
+    // 選んだ状態が UK-source でも復元され、そのチップが無いので 1 件も
+    // 出なくなっていた。
+    const p = await open("/kstrange/");
+    await clickChip(p, "S");
+    await Bun.sleep(400);
+    expect((await p.evaluate(snapshot)).shown).toBe(26);
+    await p.goto(`${ROOT}/uk/`, { waitUntil: "load" });
+    await Bun.sleep(1500);
+    const uk = await p.evaluate(snapshot);
+    expect(uk.shown).toBe(3409);
+    expect(uk.chip).toStartWith("すべて");
+    // 戻れば kStrange 側の絞り込みは残っている
+    await p.goto(`${ROOT}/kstrange/`, { waitUntil: "load" });
+    await Bun.sleep(1500);
+    expect((await p.evaluate(snapshot)).shown).toBe(26);
+    await p.close();
+  });
+
+  test("知らない分類が残っていても 0 件にしない", async () => {
+    const p = await open("/kstrange/");
+    await p.evaluate(() => {
+      const k = "kanji:kstrange:view";
+      const v = JSON.parse(sessionStorage.getItem(k) || "{}");
+      v.cat = "存在しない分類";
+      sessionStorage.setItem(k, JSON.stringify(v));
+    });
+    await p.reload({ waitUntil: "load" });
+    await Bun.sleep(1200);
+    expect((await p.evaluate(snapshot)).shown).toBe(828);
     await p.close();
   });
 });
