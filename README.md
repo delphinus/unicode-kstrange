@@ -39,7 +39,20 @@ make CATEGORY=B     # 別のカテゴリ
 open docs/index.html
 ```
 
-Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-utn43` だけ poppler (`pdftotext`) を使う。
+Python 3.11 以上のみ (標準ライブラリだけで動く)。`make test-browser` だけ bun と Chrome を使う。
+
+## テスト
+
+```sh
+make test          # 生成物の中身。2 秒、ブラウザ不要
+make test-browser  # 画面の挙動。30 秒、bun と Chrome が要る
+```
+
+並べてあるのは**実際に踏んだ不具合**で、思い付きの網羅ではない。`tests/test_pages.py`
+は組み立てた HTML を直接見る (字形の参照先、リンクの入れ子、まだ無いページへのリンク、
+札の長さ、差し替えた字が検索から落ちていないか…)。`tests/browser/site.test.ts` は
+ヘッドレス Chrome で、絞り込みと再読み込みの復元、横に溢れないこと、
+900px での切り替え、暗い配色での字形、フォントの読み込みを見る。
 
 | ターゲット | 中身 |
 |---|---|
@@ -50,6 +63,8 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make check-ut
 | `make uk-source` | UK-source の提出文書 3 通を `cache/` へ落とし、抱えている Excel から字ごとの用例証拠を取り出す |
 | `make l2docs` | `USourceData.txt` が挙げる UTC 文書 (L2/…) の題名・著者・PDF の URL を `cache/` へ |
 | `make html` | `docs/index.html` を組み立てる |
+| `make test` | 生成物の中身を確かめる。標準ライブラリだけで動き、ブラウザは要らない |
+| `make test-browser` | 画面の挙動を確かめる。bun と Chrome が要る (無ければ飛ばす) |
 | `make check-links` | 生成物のリンクを叩いて、開けないものを出す。`SAMPLE=15` でホストごとに 15 本だけ (828 字だと全部で 4,547 本あるため) |
 | `make check-utn43` | UTN #43 の PDF の記述と Unihan の件数を比べる |
 

@@ -1,0 +1,6 @@
+{
+  "name": "unicode-kstrange-browser-tests",
+  "private": true,
+  "description": "画面の挙動を確かめる。bun test で動かす (make test-browser)。",
+  "devDependencies": { "puppeteer-core": "^25" }
+}

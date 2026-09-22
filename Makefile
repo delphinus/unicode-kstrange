@@ -4,7 +4,7 @@ PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
 .PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
-        index check check-links check-utn43 clean distclean
+        index test test-browser check check-links check-utn43 clean distclean
 
 all: fetch glyphs wiktionary zi-tools uk-source l2docs html index
 
@@ -40,7 +40,18 @@ html:
 index:
 	$(SCRIPTS) scripts/build_index.py
 
-check: check-links check-utn43
+## 生成物の中身を確かめる (標準ライブラリだけ、ブラウザ不要)
+test:
+	$(SCRIPTS) -m unittest discover -s tests
+
+## 画面の挙動を確かめる (bun と Chrome が要る。無ければ飛ばす)
+test-browser:
+	@command -v bun >/dev/null || { echo "bun が無いので飛ばす"; exit 0; }
+	cd tests/browser && bun install --frozen-lockfile 2>/dev/null || \
+		(cd tests/browser && bun install)
+	cd tests/browser && bun test --timeout 60000
+
+check: test check-links check-utn43
 
 ## 生成物のリンクを叩く (SAMPLE=n でホストごとに n 本だけ)
 SAMPLE ?= 0
