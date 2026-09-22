@@ -17,6 +17,12 @@ from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, spoofing_pairs,
                     targets, toml, unihan, usource)
 
 URL = "https://glyphwiki.org/glyph/u{hex}.svg"
+# まだ符号化されていない登録にも GlyphWiki は字形を持っている。コードポイントが
+# 無いので u<16 進> では引けないが、U-source 識別子を小文字にした名前 (utc-00086)
+# で登録されている。UAX #45 の字形表 (USourceGlyphs.pdf) はフォントの取り出しが
+# 禁じられているので、こちらが唯一の出どころ。
+USRC_URL = "https://glyphwiki.org/glyph/{sid}.svg"
+ENCODED = {"URO", "Comp"} | {f"Ext{x}" for x in "ABCDEFGHIJ"}
 
 
 def texts_in_page():
@@ -63,6 +69,24 @@ def main():
         log(f"本文中に出てくる字 (表の対象外): {len(extra)} 字")
         cps = cps + extra
 
+    def grab(url, dest, label, quiet=False):
+        """1 枚取る。取れたら True。無い字は 404 が返る (中身は PNG の案内画像)。"""
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                body = r.read()
+        except urllib.error.HTTPError as e:
+            if not quiet:
+                log(f"  {label} 取得できず ({e.code})")
+            return False
+        if not body.lstrip().startswith(b"<svg"):
+            if not quiet:
+                log(f"  {label} SVG ではない応答")
+            return False
+        dest.write_bytes(body)
+        time.sleep(args.sleep)
+        return True
+
     got = skipped = 0
     failed = []
     for cp in cps:
@@ -71,23 +95,27 @@ def main():
         if dest.exists() and not args.force:
             skipped += 1
             continue
-        url = URL.format(hex=h)
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                body = r.read()
-        except urllib.error.HTTPError as e:
-            log(f"  {cp} 取得できず ({e.code})")
+        if grab(URL.format(hex=h), dest, cp):
+            got += 1
+        else:
             failed.append(cp)
-            continue
-        if not body.lstrip().startswith(b"<svg"):
-            log(f"  {cp} SVG ではない応答")
-            failed.append(cp)
-            continue
-        dest.write_bytes(body)
-        got += 1
-        time.sleep(args.sleep)
     log(f"取得 {got} / 既存 {skipped} / 失敗 {len(failed)}")
+
+    # まだ符号化されていない登録。GlyphWiki に無いものもあるので、取れなくても
+    # 落とさない (構成式を出す元の形に戻るだけ)。
+    # 一覧に出す対象と同じ条件で引く (build_html の select と揃える)
+    ids = [s for s, v in usource().items() if v["status"] not in ENCODED]
+    ug = us = un = 0
+    for sid in ids:
+        dest = GLYPHS / f"{sid.lower()}.svg"
+        if dest.exists() and not args.force:
+            us += 1
+            continue
+        if grab(USRC_URL.format(sid=sid.lower()), dest, sid, quiet=True):
+            ug += 1
+        else:
+            un += 1
+    log(f"まだ符号化されていない登録: 取得 {ug} / 既存 {us} / GlyphWiki に無い {un}")
     # 表に出す字が欠けるのは困るが、文中に出てくるだけの字は素のテキストで出せば
     # 済む (GlyphWiki に無い新しい字がある)。落とすのは前者のときだけ。
     if set(failed) - set(extra):

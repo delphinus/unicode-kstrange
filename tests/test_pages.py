@@ -201,10 +201,45 @@ class USourceTest(PageTest):
             self.assertRegex(m.group(1), r"uk20\d\d\.ttf", m.group(1)[:80])
         self.assertNotIn("usourceglyphs.ttf", self.html.lower())
 
-    def test_rows_show_an_ids(self):
-        with_ids = sum(1 for r in self.rows if 'class="ids"' in r
-                       and visible(glyph_cell(r)).strip())
-        self.assertGreater(with_ids / len(self.rows), 0.9)
+    def test_every_row_shows_something(self):
+        """字形か構成式のどちらかは必ず出ていること。左端が空の行を作らない。"""
+        for r in self.rows:
+            g = glyph_cell(r)
+            self.assertTrue('class="ids"' in g or 'class="idsc"' in g
+                            or "<img" in g or 'class="uk ' in g,
+                            f"左端が空: {g[:120]}")
+
+    def test_unrepresentable_part_is_marked(self):
+        """UAX #45 が符号位置の無い構成要素に置く ？ を、印だと分かる形で出す。
+
+        素で出すと字形の取得に失敗したように見える (UK-02847 でそう見えた)。
+        """
+        n = 0
+        for r in self.rows:
+            g = glyph_cell(r)
+            if "？" not in g:
+                continue
+            n += 1
+            self.assertIn('class="qm"', g, f"？ が素で出ている: {g[:150]}")
+        self.assertGreater(n, 0, "？ を含む行が 1 つも無い")
+
+    def test_uk_submissions_use_their_own_glyph(self):
+        """英国の提出文書に字形があるものは、構成式ではなくその字形を出す。
+
+        UK-02847 は構成式が ⿰⿸尸？殳 で、？ のせいで読めない。提出文書の
+        添付フォントに字形 (私用領域 EB42) があるので、そちらを出す。
+        """
+        r = next(x for x in self.rows if ">UK-02847<" in x)
+        g = glyph_cell(r)
+        self.assertIn("uk2015", g, g[:200])
+        self.assertIn("&#xEB42;", g, g[:200])
+
+    def test_uk_evidence_is_merged(self):
+        """USourceData.txt は UTC 文書の通し番号しか持っていないので、
+        英国の提出文書にある書名とページを足す。"""
+        r = next(x for x in self.rows if ">UK-02847<" in x)
+        self.assertIn("Hanyu Fangyan Da Cidian", r)
+        self.assertIn("IRG N2107R2", r)
 
     def test_ids_operators_are_substituted(self):
         """⿰⿱⿳ は持っていないフォントが多いので字形に差し替える。"""

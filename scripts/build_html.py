@@ -412,22 +412,54 @@ class Builder:
                 f' · {a(UNIHAN.format(hex=t[2:]), "Unihan")}</div></div></div>')
         return "".join(out) or '<span class="none">相手の記載なし</span>'
 
+    def ids_html(self, ids):
+        """構成式。UAX #45 は符号位置の無い構成要素を ？ (U+FF1F) で置く。
+
+        そのまま出すと字形の取得に失敗したように見えるので、印であることが
+        分かる形にする。ここに当たるのは 3,689 件中 5 件。
+        """
+        out = self.glyphs(ids)
+        return out.replace(
+            "？", '<span class="qm" title="符号位置の無い構成要素 '
+                  '(UAX #45 が ？ で置いている)">？</span>')
+
+    def usource_glyph(self, uid):
+        """まだ符号化されていない登録の字形。無ければ空文字。
+
+        UAX #45 の字形表 (USourceGlyphs.pdf) には全件の字形があるが、
+        「You may not extract, copy, modify, or distribute fonts or font data
+        from any Unicode Products」と明記されていて取り出せない。出どころは
+        2 つ: 英国の提出文書が抱えるフォント (私用領域) と、GlyphWiki が
+        U-source 識別子を小文字にした名前で持っている字形。
+        """
+        r = self.uk.get(uid) or {}
+        if r.get("pua") and r.get("font"):
+            return (f'<span class="uk {r["font"]}" title="{uid} '
+                    f'({r["doc"]} の添付フォント)">&#x{r["pua"]};</span>')
+        if (GLYPHS / f"{uid.lower()}.svg").exists():
+            return (f'<img src="../glyphs/{uid.lower()}.svg" alt="{uid}" '
+                    f'loading="lazy" title="{uid} (GlyphWiki)">')
+        return ""
+
     # -- 1 件ぶん (まだ符号化されていない登録) --------------------------------
     def row_usource(self, uid):
-        """USourceData.txt の 1 行。コードポイントが無いので Unihan は引けない。
-
-        字形の画像は出せない。UAX #45 の字形表 (USourceGlyphs.pdf) はあるが、
-        「You may not extract, copy, modify, or distribute fonts or font data
-        from any Unicode Products」と明記されていて、フォントの取り出しが
-        禁じられている。代わりに IDS (構成式) を出して、字形表へリンクする。
-        """
+        """USourceData.txt の 1 行。コードポイントが無いので Unihan は引けない。"""
         v = self.usrc[uid]
         st = self.status_ja(v["status"])
-        ids = self.glyphs(v["ids"]) if v["ids"] else '<span class="none">IDS なし</span>'
+        ids = self.ids_html(v["ids"]) if v["ids"] else \
+            '<span class="none">構成式なし</span>'
+        g = self.usource_glyph(uid)
+        # 字形があれば主役はそちら。構成式は下に小さく添える (何と何から
+        # できているかが読めるので、字形が出ていても捨てない)
+        glyph = (f'{g}<div class="idsc">{ids}</div>' if g
+                 else f'<span class="ids">{ids}</span>')
         rad, _, res = v["rs"].partition(".")
         links = [a(UGLYPHS, "字形表 (PDF)"), a(URSCHART, "部首索引 (PDF)"),
                  a("https://www.unicode.org/reports/tr45/", "UAX #45")]
-        note = self.u_note(uid) or '<span class="none">出典の記載のみ</span>'
+        # 英国が IRG へ出した字は、提出文書のほうが「どの本の何ページ」まで
+        # 書いてある。UTC 文書の通し番号しか無い USourceData.txt に足す。
+        note = ((self.u_note(uid) or "") + self.uk_note(uid)
+                or '<span class="none">出典の記載のみ</span>')
         src = (f'<div class="h">出典</div><ul>{self.usource_items(uid)}</ul>')
         cats = (f'<span class="cat" title="{html.escape(STATUS_TIP.get(st, ""))}">'
                 f"{st}</span>")
@@ -436,7 +468,7 @@ class Builder:
         return TR.format(
             search=html.escape(search), strokes=int(res or 0),
             n=int(re.sub(r"\D", "", uid) or 0), catkeys=st, cp=uid,
-            glyph=f'<span class="ids">{ids}</span>',
+            glyph=glyph,
             block=f"部首 {rad}", strokes_txt=res or "0", cats=cats,
             readings="", df="", links=" · ".join(links),
             summary=html.escape(v.get("comment") or st), evhead=self.evhead,
@@ -647,12 +679,16 @@ class Builder:
                     f"関係は相互に登録されていて、この {len(cps):,} 字で閉じている。")
         elif self.spec.get("select") == "usource":
             title, catname = self.spec["title"], ""
+            ng = sum(1 for c in cps if self.usource_glyph(c))
             lead = (f"UAX #45 に登録されたが、まだ符号化されていない {len(cps):,} 件。"
                     f"却下されたもの、既存の字の異体と判断されたもの、先送りされたもの、"
-                    f"審議が続いているものが混ざっている。<b>コードポイントが無いので"
-                    f"字形の画像は出せない</b> — Unicode の字形表はフォントの取り出しを"
-                    f"禁じているため、代わりに IDS (構成式) を出している。正式な字形は"
-                    f"字形表 (PDF) で引ける。")
+                    f"審議が続いているものが混ざっている。コードポイントが無いので "
+                    f"Unicode の字形表からは字形を取れない (フォントの取り出しが"
+                    f"禁じられている) が、{ng:,} 件は GlyphWiki と英国の提出文書から"
+                    f"字形が出せた。残る {len(cps) - ng:,} 件は IDS (構成式) のみで、"
+                    f"正式な字形は字形表 (PDF) で引ける。構成式の中の "
+                    f'<span class="qm">？</span> は、符号位置が無くて書けない'
+                    f"構成要素に UAX #45 が置いている印。")
         elif self.spec.get("select") == "uk":
             title, catname = self.spec["title"], ""
             lead = (f"英国が IRG へ提出した {len(cps):,} 字。用例に挙げられた書名と"
@@ -769,6 +805,14 @@ td.g {{ text-align:center }} td.g > img {{ width:84px; height:84px }}
 .uk {{ font-size:84px; line-height:1.05 }}
 /* まだ符号化されていない字は画像を出せないので、構成式をそのまま見せる */
 .ids {{ font-size:1.5rem; line-height:1.4; word-break:break-all }}
+/* 字形が出ているときの構成式。主役は字形なので小さく添える */
+.idsc {{ font-size:1rem; line-height:1.3; word-break:break-all; margin-top:.3rem;
+         color:var(--muted) }}
+.idsc img.ig {{ vertical-align:-.15em }}
+/* UAX #45 が符号位置の無い構成要素に置いている印。取得に失敗したように
+   見えるので、印だと分かる形にする */
+.qm {{ color:var(--muted); border:1px dashed currentColor; border-radius:3px;
+       padding:0 .1em; font-size:.8em; vertical-align:.1em }}
 /* 見間違えやすい相手。本体と同じ大きさで並べないと比べられない */
 .pair {{ display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.8rem }}
 img.pg {{ width:84px; height:84px; flex:0 0 auto }}
