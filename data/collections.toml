@@ -23,8 +23,10 @@ glyph = "ukfont"       # 字形は提出文書の添付フォント
 
 [[collection]]
 slug = "u-source"
-title = "通らなかった字"
-lead = "UAX #45 に提案されたが、却下・保留のままになっている字"
+title = "まだ符号化されていない字"
+lead = "UAX #45 に登録されたが、却下・異体字扱い・先送り・審議中のままの登録"
+select = "usource"     # USourceData.txt のうち符号化されていないもの
+facet = "status"       # 絞り込みは status (却下 / 異体字 / 先送り / 審議中 …)
 
 [[collection]]
 slug = "spoofing"

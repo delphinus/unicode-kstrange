@@ -28,6 +28,21 @@ ZDIC = "https://www.zdic.net/hans/{enc}"
 GLYPHWIKI = "https://glyphwiki.org/wiki/u{lhex}"
 WIKTIONARY = "https://en.wiktionary.org/wiki/{enc}"
 UKDOC = "https://github.com/unicode-org/uk-source-ideographs/blob/main/{doc}.pdf"
+UGLYPHS = "https://www.unicode.org/Public/UCD/latest/ucd/USourceGlyphs.pdf"
+URSCHART = "https://www.unicode.org/Public/UCD/latest/ucd/USourceRSChart.pdf"
+
+# UAX #45 の status。符号化済みのものはこの一覧に出さない。
+ENCODED = {"URO", "Comp"} | {f"Ext{x}" for x in "ABCDEFGHIJ"}
+STATUS_JA = {"Rejected": "却下", "NoAction": "対応なし", "Variant": "異体字",
+             "FutureWS": "先送り", "WS-2024": "審議中"}
+STATUS_TIP = {
+    "却下": "CJK 統合漢字として符号化するのに適さないと判断された",
+    "対応なし": "検討されたが、符号化へ向けた動きが取られていない",
+    "異体字": "既に符号化されている字の異体と判断され、別に符号化しない",
+    "先送り": "将来の作業集合へ回された",
+    "審議中": "IRG Working Set 2024 として提出され、審議が続いている",
+    "重複で取り下げ": "同じ字の別の登録があるため取り下げられた (status は残ったほうの識別子)",
+}
 
 BLOCK_JA = {"CJK Unified Ideographs": "基本ブロック (URO)"}
 for x in "ABCDEFGHIJ":
@@ -62,9 +77,7 @@ TR = """
   </td>
   <td class="src">
     <details class="dt" open><summary>{summary}<span class="more">出典</span></summary>
-    <div class="h">IRG ソース参照</div><ul>{cites}</ul>
-    <div class="h">字書索引</div><ul>{dicts}</ul>
-    {zi}
+    {srcbody}
     </details>
   </td>
   <td class="ev{evnone}">
@@ -310,6 +323,29 @@ class Builder:
             body += (f'<p class="fig">証拠画像: {html.escape(r["fig"])}</p>')
         return f'<div class="note"><b>{head}</b>{body}</div>'
 
+    def usource_items(self, sid):
+        """USourceData.txt の出典欄を 1 件ずつ読める形にする。"""
+        d = self.usrc.get(sid) or {}
+        out = []
+        for part in re.split(r"[*;]", d.get("sources") or ""):
+            part = part.strip()
+            if not part:
+                continue
+            tag, _, idx = part.partition(" ")
+            if tag == "UTCDoc":
+                continue                      # 文書は右の列に出す
+            if tag.startswith("http"):
+                out.append(a(part.split()[0], html.escape(part.split()[0])))
+            else:
+                out.append(html.escape(self.utags.get(tag, tag))
+                           + (f" — {html.escape(idx)}" if idx else ""))
+        if out:
+            return "".join(f"<li>{i}</li>" for i in out)
+        # 出典欄が UTCDoc だけの登録。文書は右の列に出すので、そう断わる
+        if "UTCDoc" in (d.get("sources") or ""):
+            return '<li class="none">提案文書のみ (右の列)</li>'
+        return '<li class="none">出典の記載なし</li>'
+
     def u_note(self, sid):
         """U-source の出典欄 (USourceData.txt) を読める形にする。"""
         d = self.usrc.get(sid)
@@ -349,8 +385,40 @@ class Builder:
                      + "".join(f"<li>{i}</li>" for i in items) + "</ul>")
         return f'<div class="note"><b>{sid}</b>{body}</div>'
 
+    # -- 1 件ぶん (まだ符号化されていない登録) --------------------------------
+    def row_usource(self, uid):
+        """USourceData.txt の 1 行。コードポイントが無いので Unihan は引けない。
+
+        字形の画像は出せない。UAX #45 の字形表 (USourceGlyphs.pdf) はあるが、
+        「You may not extract, copy, modify, or distribute fonts or font data
+        from any Unicode Products」と明記されていて、フォントの取り出しが
+        禁じられている。代わりに IDS (構成式) を出して、字形表へリンクする。
+        """
+        v = self.usrc[uid]
+        st = self.status_ja(v["status"])
+        ids = self.glyphs(v["ids"]) if v["ids"] else '<span class="none">IDS なし</span>'
+        rad, _, res = v["rs"].partition(".")
+        links = [a(UGLYPHS, "字形表 (PDF)"), a(URSCHART, "部首索引 (PDF)"),
+                 a("https://www.unicode.org/reports/tr45/", "UAX #45")]
+        note = self.u_note(uid) or '<span class="none">出典の記載のみ</span>'
+        src = (f'<div class="h">出典</div><ul>{self.usource_items(uid)}</ul>')
+        cats = (f'<span class="cat" title="{html.escape(STATUS_TIP.get(st, ""))}">'
+                f"{st}</span>")
+        search = " ".join([uid, st, v["ids"], v["rs"], v.get("sources", ""),
+                           v.get("comment", ""), re.sub("<[^>]+>", " ", note)]).lower()
+        return TR.format(
+            search=html.escape(search), strokes=int(res or 0),
+            n=int(re.sub(r"\D", "", uid) or 0), catkeys=st, cp=uid,
+            glyph=f'<span class="ids">{ids}</span>',
+            block=f"部首 {rad}", strokes_txt=res or "0", cats=cats,
+            readings="", df="", links=" · ".join(links),
+            summary=html.escape(v.get("comment") or st),
+            srcbody=src, evnone="", note=note)
+
     # -- 1 字ぶん -----------------------------------------------------------
     def row(self, cp):
+        if self.spec.get("select") == "usource":
+            return self.row_usource(cp)
         v = self.uni[cp]
         ch = chr(int(cp[2:], 16))
         enc, lhex = pct(ch), cp[2:].lower()
@@ -427,7 +495,11 @@ class Builder:
             df=('<div class="df">' + html.escape(v["kDefinition"]) + "</div>"
                 if v.get("kDefinition") else ""),
             links=" · ".join(links), summary=summary, cites=cites, dicts=dicts,
-            zi=zi, evnone=evnone, note=note)
+            srcbody=('<div class="h">IRG ソース参照</div>'
+                     f"<ul>{cites}</ul>"
+                     '<div class="h">字書索引</div>'
+                     f"<ul>{dicts}</ul>{zi}"),
+            evnone=evnone, note=note)
 
 
     def filter_bar(self, cps):
@@ -441,7 +513,7 @@ class Builder:
         chips = [f'<button class="chip on" data-cat="">すべて {len(cps)}</button>']
         for c in sorted(counts, key=lambda x: -counts[x]):
             chips.append(f'<button class="chip" data-cat="{c}" '
-                         f'title="{html.escape(self.cats.get(c, ""))}">'
+                         f'title="{html.escape(self.cats.get(c) or STATUS_TIP.get(c, ""))}">'
                          f'{c} {counts[c]:,}</button>')
         return f'<div class="chips">{"".join(chips)}</div>'
 
@@ -465,8 +537,18 @@ class Builder:
                 out.append(f'<span class="soon">{t}</span>')
         return " · ".join(out)
 
+    @staticmethod
+    def status_ja(st):
+        return STATUS_JA.get(st, "重複で取り下げ" if re.fullmatch(r"(UTC|UK)-\d+", st)
+                             else st)
+
     def select(self):
         """このコレクションに載せる字。"""
+        if self.spec.get("select") == "usource":
+            # まだ符号化されていない登録。コードポイントが無いので、
+            # ここだけ Unihan ではなく USourceData.txt の識別子を並べる。
+            return sorted(k for k, v in self.usrc.items()
+                          if v["status"] not in ENCODED)
         if self.spec.get("select") == "uk":
             return sorted((cp for cp in self.uni if self.uni[cp].get("kIRG_UKSource")),
                           key=lambda x: int(x[2:], 16))
@@ -474,6 +556,8 @@ class Builder:
 
     def facets(self, cp):
         """絞り込みの分類。kStrange はカテゴリ、UK-source は提出した作業集合。"""
+        if self.spec.get("facet") == "status":
+            return [self.status_ja(self.usrc[cp]["status"])]
         if self.spec.get("facet") == "ukdoc":
             r = self.uk.get(self.uni[cp].get("kIRG_UKSource", "")) or {}
             return [r["ws"].replace("IRG Working Set ", "WS")] if r.get("ws") else []
@@ -514,7 +598,15 @@ class Builder:
         common = ("🔎 が付いたリンクは原典の該当箇所。字義や用例の<b>文中</b>に出てくる"
                   "拡張 A 以降の字は GlyphWiki の SVG に差し替えてある "
                   "(選択してコピーすれば字のまま取れる)。")
-        if self.spec.get("select") == "uk":
+        if self.spec.get("select") == "usource":
+            title, catname = self.spec["title"], ""
+            lead = (f"UAX #45 に登録されたが、まだ符号化されていない {len(cps):,} 件。"
+                    f"却下されたもの、既存の字の異体と判断されたもの、先送りされたもの、"
+                    f"審議が続いているものが混ざっている。<b>コードポイントが無いので"
+                    f"字形の画像は出せない</b> — Unicode の字形表はフォントの取り出しを"
+                    f"禁じているため、代わりに IDS (構成式) を出している。正式な字形は"
+                    f"字形表 (PDF) で引ける。")
+        elif self.spec.get("select") == "uk":
             title, catname = self.spec["title"], ""
             lead = (f"英国が IRG へ提出した {len(cps):,} 字。用例に挙げられた書名と"
                     f"ページが提出文書に残っている。<b>字形は提出文書が抱えている"
@@ -609,7 +701,8 @@ td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line
       font-size:.86rem; overflow-wrap:anywhere }}
 /* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
 col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
-td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
+/* 直接の子だけ。構成式の中に埋めた字形 (img.ig) まで 84px にしない */
+td.g {{ text-align:center }} td.g > img {{ width:84px; height:84px }}
 /* UK-source の字形は提出文書が抱えているフォントで出す。私用領域に置かれていて、
    対応は Excel の PUA 欄。GlyphWiki から 3,409 件の SVG を取るより速く、
    英国が提出した字形そのもの。テキストなので暗い配色でも色が付いてくる */
@@ -617,12 +710,14 @@ td.g {{ text-align:center }} td.g img {{ width:84px; height:84px }}
 @font-face {{ font-family:uk2017; src:url(../fonts/uk2017.ttf); font-display:block }}
 @font-face {{ font-family:uk2021; src:url(../fonts/uk2021.ttf); font-display:block }}
 .uk {{ font-size:84px; line-height:1.05 }}
+/* まだ符号化されていない字は画像を出せないので、構成式をそのまま見せる */
+.ids {{ font-size:1.5rem; line-height:1.4; word-break:break-all }}
 .uk2015 {{ font-family:uk2015 }}
 .uk2017 {{ font-family:uk2017 }}
 .uk2021 {{ font-family:uk2021 }}
 /* GlyphWiki の SVG は fill="black" 固定。暗い配色では地に沈むので反転させる
    (黒一色・背景は透明なので、反転すると白抜きになる) */
-@media (prefers-color-scheme: dark) {{ td.g img {{ filter:invert(1) }} }}
+@media (prefers-color-scheme: dark) {{ td.g > img {{ filter:invert(1) }} }}
 .cp {{ font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }}
 .sub {{ color:var(--muted); font-size:.8rem }}
 .cats {{ margin:.35rem 0 }}
@@ -711,8 +806,9 @@ details.dt > summary {{ display:none }}
               contain-intrinsic-size:auto 380px }}
   td {{ display:block; padding:0; border-bottom:none;
         overflow-wrap:anywhere }}   /* 長い書誌や URL で横に溢れさせない */
-  td.g img {{ width:56px; height:56px }}
+  td.g > img {{ width:56px; height:56px }}
   .uk {{ font-size:56px }}
+  .ids {{ font-size:1.2rem }}
   /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
   td.id .cp, td.id .sub {{ display:inline }}
   td.id .sub {{ margin-left:.5rem }}

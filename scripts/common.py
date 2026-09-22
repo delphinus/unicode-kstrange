@@ -129,9 +129,13 @@ def needs_glyph(ch: str) -> bool:
     基本ブロック (URO) の字はどの環境にもあるが、拡張 A 以降は無いことが多い。
     macOS の標準フォントは拡張 B より後をほとんど持っていない。当たった字は
     GlyphWiki の SVG に差し替えて出す。
+
+    IDS の記号 (⿰⿱⿳…) も入れてある。基本多言語面だが持っていないフォントが
+    多く、まだ符号化されていない字の構成式を出すときに豆腐になる。
     """
     n = ord(ch)
-    return 0x3400 <= n <= 0x4DBF or 0x20000 <= n <= 0x3FFFF
+    return (0x2FF0 <= n <= 0x2FFF or 0x3400 <= n <= 0x4DBF
+            or 0x20000 <= n <= 0x3FFFF)
 
 
 def mentioned(texts) -> list[str]:

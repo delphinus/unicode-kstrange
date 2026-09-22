@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 
 from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, targets, toml,
-                    unihan)
+                    unihan, usource)
 
 URL = "https://glyphwiki.org/glyph/u{hex}.svg"
 
@@ -35,6 +35,9 @@ def texts_in_page():
     for n in toml("notes.toml").values():
         out.append(n.get("text"))
         out += [e.get("text", "") for e in n.get("evidence", [])]
+    # まだ符号化されていない字は IDS (構成式) しか見せるものが無いので、
+    # そこに出てくる部品と ⿰⿱⿳ の記号も要る
+    out += [v["ids"] for v in usource().values() if v.get("ids")]
     return out
 
 
