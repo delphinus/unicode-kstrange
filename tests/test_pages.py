@@ -9,6 +9,7 @@
 cache/ が無いと組み立てられないので、その場合は丸ごと飛ばす。
 """
 import html
+import json
 import re
 import sys
 import unittest
@@ -278,6 +279,84 @@ class SpoofingTest(PageTest):
             for t in ts:
                 self.assertIn(t, pairs, f"{cp} の相手 {t} に登録が無い")
                 self.assertIn(cp, pairs[t], f"{t} から {cp} へ戻れない")
+
+
+class NavTest(PageTest):
+    """一覧の上に貼り付けてある行。どのコレクションでも同じ。"""
+
+    def test_nav_stays_in_this_tab(self):
+        """同じサイトの中の移動で別のタブを開かない。
+
+        原典へ飛ぶリンクは target=_blank で良いが、コレクションの行は
+        押すたびにタブが増えてしまう。
+        """
+        nav = re.search(r'<nav class="nav">(.*?)</nav>', self.html, re.S).group(1)
+        self.assertNotIn("target=", nav, nav)
+        self.assertIn('href="../"', nav)
+        self.assertIn('href="../lucky/"', nav)
+
+    def test_nav_is_pinned(self):
+        """スクロールしても残ること。下の帯はその高さぶん下げる。"""
+        self.assertRegex(self.html, r"\.nav \{[^}]*position:sticky[^}]*top:0")
+        self.assertRegex(self.html, r"\.bar \{[^}]*top:var\(--navh")
+
+    def test_chips_fold_on_narrow(self):
+        """狭い画面ではチップを畳む。貼り付ける帯が画面を食いすぎるため。"""
+        narrow = self.html[self.html.index("@media (max-width: 900px)"):]
+        self.assertRegex(narrow, r"\.chips \{[^}]*display:none")
+        self.assertIn(".chips.open", narrow)
+        self.assertIn('id="chiptog"', self.html)
+
+
+class LuckyPageTest(unittest.TestCase):
+    """ひとつずつ引くページ。4 つの一覧を合わせた母集団から 1 字ずつ出す。"""
+
+    @classmethod
+    def setUpClass(cls):
+        import build_lucky
+        from common import DOCS
+        cls.counts = {}
+        for c in toml("collections.toml")["collection"]:
+            m = DOCS / c["slug"] / "meta.json"
+            if m.exists():
+                cls.counts[c["slug"]] = json.loads(m.read_text(encoding="utf-8"))["count"]
+        build_lucky.main()
+        cls.html = (DOCS / "lucky" / "index.html").read_text(encoding="utf-8")
+
+    def test_holds_no_characters(self):
+        """字はこのページに持たせない。一覧から切り出して貼る。
+
+        字ごとのページを 5,000 枚書き出すと、同じ内容が 2 か所になる。
+        """
+        self.assertNotIn('<tr data-search=', self.html)
+        self.assertLess(len(self.html), 80_000, "字を抱えてしまっている")
+
+    def test_pool_is_every_collection(self):
+        """母集団は 4 つの一覧の合計。件数の比で選ぶので一様になる。"""
+        cols = json.loads(re.search(r"const COLS=(\{.*?\});", self.html).group(1))
+        self.assertEqual(cols, self.counts)
+        self.assertIn(f"{sum(self.counts.values()):,} 字", self.html)
+
+    def test_uses_the_same_style(self):
+        """切り出した行が一覧と同じに見えること。CSS は 1 か所から使う。"""
+        from build_html import STYLE
+        self.assertIn(STYLE, self.html)
+
+
+class HubTest(unittest.TestCase):
+    """トップページ。"""
+
+    @classmethod
+    def setUpClass(cls):
+        import build_index
+        from common import DOCS
+        build_index.main()
+        cls.html = (DOCS / "index.html").read_text(encoding="utf-8")
+
+    def test_has_the_lucky_entry(self):
+        """上から眺めるには多すぎるので、ここから当たれるようにする。"""
+        self.assertIn('href="lucky/"', self.html)
+        self.assertIn("ひとつずつ見る", self.html)
 
 
 def load_tests(loader, tests, pattern):

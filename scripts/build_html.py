@@ -588,14 +588,18 @@ class Builder:
                        if r.get("def") and not self.zi_ja(r["def"])})
 
     def nav_html(self):
-        """ハブと他のコレクションへの行。切り替えは頻繁ではないので貼り付けない。"""
-        out = ['<a href="../">漢字</a>']
+        """ハブと他のコレクションへの行。画面の上に貼り付けてある。
+
+        同じサイトの中の移動なので別のタブを開かない。a() は外部の原典へ飛ぶ
+        リンク用で target=_blank が付くため、ここでは使わない。
+        """
+        out = ['<a href="../">漢字</a>', '<a href="../lucky/">ひとつずつ</a>']
         for c in toml("collections.toml")["collection"]:
             t = html.escape(c["title"])
             if c["slug"] == self.slug:
                 out.append(f"<b>{t}</b>")
             elif (DOCS / c["slug"] / "meta.json").exists():
-                out.append(a(f'../{c["slug"]}/', t))
+                out.append(f'<a href="../{c["slug"]}/">{t}</a>')
             else:
                 # まだ作っていないものはリンクにしない (404 になる)
                 out.append(f'<span class="soon">{t}</span>')
@@ -706,12 +710,241 @@ class Builder:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         self.count = len(cps)
         self.page_title = title
-        return TEMPLATE.format(title=title, lead=lead, nav=self.nav_html(),
+        return TEMPLATE.format(style=STYLE, title=title, lead=lead, nav=self.nav_html(),
                                count=len(cps), rows=rows, now=now, chips=chips,
                                evhead=self.evhead, slug=self.slug,
                                uv=UNICODE_VERSION, utn=UTN43_REVISION,
                                hashes=hashes or "(manifest なし)")
 
+
+# 4 つの一覧で共通。ひとつずつ引くページも同じものを読み込む
+STYLE = r"""
+:root {
+  color-scheme: light dark;       /* 検索欄やスクロールバーも OS の設定に合わせる */
+  --bg:#fafafa; --surface:#fff; --bar:rgba(250,250,250,.96);
+  --text:#1a1a1a; --soft:#444; --muted:#6b6b6b; --faint:#999; --foot:#333;
+  --line:#d8d8d8; --head:#f4f4f4; --code:#f0f0f0;
+  --accent:#1a5fb4; --on-accent:#fff;
+  --chip-on:#1a1a1a; --on-chip:#fff;
+  --cat-bg:#eef2f8; --cat-line:#cfd9e8;
+  --virt:#a33; --warn-bg:#fff8e1; --warn-line:#e8d48b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#16181c; --surface:#1d2025; --bar:rgba(22,24,28,.96);
+    --text:#e6e6e6; --soft:#c2c6cc; --muted:#9aa0a6; --faint:#7a7f87; --foot:#c8ccd2;
+    --line:#33373e; --head:#22262c; --code:#2a2e35;
+    --accent:#83b0ec; --on-accent:#16181c;
+    --chip-on:#e6e6e6; --on-chip:#16181c;
+    --cat-bg:#22303f; --cat-line:#3a4d63;
+    --virt:#e39191; --warn-bg:#332c19; --warn-line:#6b5b2a;
+  }
+}
+* { box-sizing:border-box }
+body { margin:0; padding:0 0 4rem; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+        line-height:1.7; color:var(--text); background:var(--bg) }
+header { padding:1.2rem 2rem 1rem; max-width:1500px; margin:0 auto }
+/* コレクションの行は画面の上に残す。どこを見ていても他へ移れるように。
+   下の .bar もここに続けて貼り付けるので、高さを --navh で渡す */
+.nav { font-size:.82rem; color:var(--muted); position:sticky; top:0; z-index:4;
+        padding:.55rem 2rem; background:var(--bar);
+        backdrop-filter:blur(6px); white-space:nowrap;
+        overflow-x:auto; scrollbar-width:none }
+.nav::-webkit-scrollbar { display:none }
+.nav b { color:var(--text) }
+.nav .soon { opacity:.5 }
+h1 { font-size:1.6rem; margin:0 0 .4rem }
+.lead { color:var(--muted); max-width:72ch; font-size:.92rem }
+.meta { font-size:.8rem; color:var(--muted); margin-top:.8rem }
+/* 検索欄・並べ替え・フィルタチップをまとめて画面の上に貼り付ける。
+   828 行をスクロールしている最中に絞り込みを変えたくなるので、
+   チップもここに入れて一緒に残す */
+.bar { position:sticky; top:var(--navh,0px); z-index:3; background:var(--bar);
+        backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
+        padding:.7rem 2rem }
+.ctl { display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
+.bar input { padding:.45rem .7rem; border:1px solid var(--line); border-radius:6px;
+              font-size:.9rem; width:22rem; max-width:50vw }
+.bar button { padding:.4rem .7rem; border:1px solid var(--line); background:var(--surface);
+               color:inherit;
+               border-radius:6px; cursor:pointer; font-size:.85rem }
+.bar button.on { background:var(--accent); color:var(--on-accent); border-color:var(--accent) }
+.chips { margin:.6rem 0 0; display:flex; gap:.4rem; flex-wrap:wrap }
+.chip { padding:.25rem .6rem; border:1px solid var(--line); background:var(--surface);
+         color:inherit; border-radius:999px;
+         cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }
+.chip.on { background:var(--chip-on); color:var(--on-chip); border-color:var(--chip-on) }
+#count { font-size:.85rem; color:var(--muted); margin-left:auto }
+/* 1 字ずつ引くときの操作列。数千字を上から眺めるのは無理なので、
+   絞り込んだ集合から順不同で 1 字ずつ配る */
+.solo { display:none; margin:.6rem 0 0; gap:.5rem; align-items:center; flex-wrap:wrap }
+.solo.on { display:flex }
+.bar button.pri { background:var(--accent); color:var(--on-accent); border-color:var(--accent) }
+#pos { font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums }
+.keys { font-size:.78rem; color:var(--muted) }
+.keys kbd { font:inherit; border:1px solid var(--line); border-radius:4px;
+             padding:0 .3rem; background:var(--surface) }
+main { max-width:1500px; margin:0 auto; padding:0 2rem }
+table { width:100%; border-collapse:collapse; background:var(--surface); margin-top:1.2rem;
+         border:1px solid var(--line); table-layout:fixed }
+/* 800 行を超えると表の描画が重いので、画面外の行の描画を後回しにする */
+tbody tr { content-visibility:auto; contain-intrinsic-size:auto 220px }
+th { text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
+      padding:.6rem .8rem; border-bottom:2px solid var(--line); background:var(--head) }
+td { vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line);
+      font-size:.86rem; overflow-wrap:anywhere }
+/* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
+col.c-g { width:110px } col.c-id { width:250px } col.c-src { width:380px }
+/* 直接の子だけ。構成式の中に埋めた字形 (img.ig) まで 84px にしない */
+td.g { text-align:center } td.g > img { width:84px; height:84px }
+/* UK-source の字形は提出文書が抱えているフォントで出す。私用領域に置かれていて、
+   対応は Excel の PUA 欄。GlyphWiki から 3,409 件の SVG を取るより速く、
+   英国が提出した字形そのもの。テキストなので暗い配色でも色が付いてくる */
+@font-face { font-family:uk2015; src:url(../fonts/uk2015.ttf); font-display:block }
+@font-face { font-family:uk2017; src:url(../fonts/uk2017.ttf); font-display:block }
+@font-face { font-family:uk2021; src:url(../fonts/uk2021.ttf); font-display:block }
+.uk { font-size:84px; line-height:1.05 }
+/* まだ符号化されていない字は画像を出せないので、構成式をそのまま見せる */
+.ids { font-size:1.5rem; line-height:1.4; word-break:break-all }
+/* 字形が出ているときの構成式。主役は字形なので小さく添える */
+.idsc { font-size:1rem; line-height:1.3; word-break:break-all; margin-top:.3rem;
+         color:var(--muted) }
+.idsc img.ig { vertical-align:-.15em }
+/* UAX #45 が符号位置の無い構成要素に置いている印。取得に失敗したように
+   見えるので、印だと分かる形にする */
+.qm { color:var(--muted); border:1px dashed currentColor; border-radius:3px;
+       padding:0 .1em; font-size:.8em; vertical-align:.1em }
+/* 見間違えやすい相手。本体と同じ大きさで並べないと比べられない */
+.pair { display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.8rem }
+img.pg { width:84px; height:84px; flex:0 0 auto }
+@media (prefers-color-scheme: dark) { img.pg { filter:invert(1) } }
+.pt { min-width:0 }
+.uk2015 { font-family:uk2015 }
+.uk2017 { font-family:uk2017 }
+.uk2021 { font-family:uk2021 }
+/* GlyphWiki の SVG は fill="black" 固定。暗い配色では地に沈むので反転させる
+   (黒一色・背景は透明なので、反転すると白抜きになる) */
+@media (prefers-color-scheme: dark) { td.g > img { filter:invert(1) } }
+.cp { font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }
+.sub { color:var(--muted); font-size:.8rem }
+.cats { margin:.35rem 0 }
+.cat { display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:.75rem;
+        background:var(--cat-bg); border:1px solid var(--cat-line); border-radius:4px;
+        padding:.05rem .35rem; margin-right:.25rem; cursor:help }
+.rd { font-size:.8rem; margin-top:.3rem }
+.df { font-size:.8rem; color:var(--soft); font-style:italic; margin-top:.2rem }
+.lk { font-size:.78rem; margin-top:.5rem; line-height:2 }
+a { color:var(--accent) }
+.h { font-size:.72rem; color:var(--muted); font-weight:600; margin:.2rem 0 .1rem; letter-spacing:.04em }
+.src ul { margin:0 0 .7rem; padding-left:1.1rem }
+.src li { margin-bottom:.3rem; font-size:.8rem }
+code { font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:var(--code);
+        padding:.05rem .25rem; border-radius:3px }
+.virt { color:var(--virt); font-size:.75rem }
+.nolink { color:var(--faint); font-size:.78rem }
+/* 本文中に埋める字形。フォントが持っていない字の代わりなので、前後の文字と
+   同じ大きさに合わせる。
+   CSS mask にして currentColor で塗る手もあるが、mask 画像は CORS の対象で
+   file:// から開くと読み込みに失敗し、字形が消える。手元で open docs/<slug>/index.html
+   する使い方があるので <img> のままにして、暗い配色では反転させる */
+img.ig { height:1.05em; width:1.05em; vertical-align:-.17em }
+@media (prefers-color-scheme: dark) { img.ig { filter:invert(1) } }
+/* 字義の中で参照されている字は zi.tools へのリンクにする。1,300 か所を超えるので
+   青い下線では画面がうるさい。点線だけ引いて、押せることが分かる程度にする */
+a.zl { color:inherit; text-decoration:underline dotted;
+        text-decoration-color:var(--muted); text-underline-offset:.2em }
+a.zl:hover { text-decoration-color:var(--accent) }
+/* 中身が画像だと text-decoration が描かれないので、こちらは border で引く */
+a.igl { text-decoration:none; border-bottom:1px dotted var(--muted) }
+a.igl:hover { border-bottom-color:var(--accent) }
+a.igl:hover img.ig { opacity:.55 }
+/* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
+.sr { position:absolute; width:1px; height:1px; overflow:hidden;
+       clip-path:inset(50%); white-space:nowrap }
+/* 字義はこの表で唯一「読む」ところ。まわりの索引に合わせて小さくすると、
+   差し替えた字形 (明朝体なので線が細い) が潰れて読めない */
+ul.zi { margin:0 0 .7rem; padding-left:1.1rem }
+ul.zi li { margin-bottom:.45rem; font-size:1rem }
+.ja { color:var(--text) } .ja::before { content:" — "; color:var(--muted) }
+.zisrc { color:var(--muted); font-size:.8rem }
+.zisrc::before { content:" / " }
+.zinote { color:var(--muted); font-size:.8rem; line-height:1.5 }
+.fig { color:var(--muted); font-size:.75rem; margin:.2rem 0 0 }
+.note { border-left:3px solid var(--accent); padding:.1rem 0 .1rem .7rem }
+.note b { font-size:.8rem } .note p { margin:.2rem 0 .4rem; font-size:.83rem }
+ul.ev { margin:.2rem 0 0; padding-left:1.1rem }
+ul.ev li { font-size:.82rem; margin-bottom:.25rem }
+.none { color:var(--faint); font-size:.8rem }
+footer { max-width:1500px; margin:2.5rem auto 0; padding:0 2rem; font-size:.84rem; color:var(--foot) }
+footer h2 { font-size:1rem; margin:1.6rem 0 .4rem }
+footer ul { padding-left:1.2rem }
+.warn { background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:6px;
+         padding:.8rem 1rem; margin-top:1rem }
+/* 狭い画面で畳むための入れ物。広い画面では開いたまま使うので、見出しは消す */
+details.dt > summary { display:none }
+.evh { display:none }
+
+/* ── 狭い画面 ─────────────────────────────────────────────
+   4 列の表は幅 1,500px 前提で、スマホでは潰れて読めない。
+   表を崩して 1 字 1 枚のカードにし、出典は畳んでおく。 */
+@media (max-width: 900px) {
+  header { padding:.9rem 1rem .6rem }
+  .nav { padding:.45rem 1rem; font-size:.78rem }
+  h1 { font-size:1.25rem }
+  .bar { padding:.6rem 1rem }
+  .ctl { gap:.5rem }
+  .bar input { width:100%; max-width:none }
+  #count { margin-left:0 }
+  .keys { display:none }       /* 触る画面にキーの案内は要らない */
+  main, footer { padding:0 1rem }
+  /* コレクションの行も貼り付けたので、チップは畳んでおく。開け閉めの
+     見出し (#chiptog) は検索の行に入れてあるので、畳んでいる間はチップの
+     1 行ぶんがまるごと空く */
+  .chips { display:none; margin-top:.5rem; flex-wrap:wrap }
+  .chips.open { display:flex }
+  .chip { font-size:.75rem; padding:.2rem .5rem }
+  #chiptog { max-width:11rem; overflow:hidden; text-overflow:ellipsis;
+              white-space:nowrap }
+
+  colgroup, thead { display:none }
+  table { display:block; border:none; background:none; margin-top:.8rem }
+  tbody { display:block }
+  /* 1 行 = 1 枚のカード。字形と見出しだけ横に並べ、残りは下へ流す */
+  tbody tr { display:grid; grid-template-columns:auto 1fr; gap:0 .7rem;
+              background:var(--surface); border:1px solid var(--line);
+              border-radius:8px; padding:.8rem; margin-bottom:.7rem;
+              contain-intrinsic-size:auto 380px }
+  td { display:block; padding:0; border-bottom:none;
+        overflow-wrap:anywhere }   /* 長い書誌や URL で横に溢れさせない */
+  td.g > img { width:56px; height:56px }
+  .uk { font-size:56px }
+  img.pg { width:56px; height:56px }
+  .ids { font-size:1.2rem }
+  /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
+  td.id .cp, td.id .sub { display:inline }
+  td.id .sub { margin-left:.5rem }
+  .cats { margin:.2rem 0 }
+  .cat { margin-bottom:.15rem }
+  td.src, td.ev { grid-column:1 / -1 }
+  td.src { margin-top:.5rem }
+  td.ev { margin-top:.6rem }
+  /* 提案文書まで辿れていない字は、同じ文言が 761 字ぶん並ぶだけなので出さない */
+  td.ev.nothing { display:none }
+  .evh { display:block }
+  .lk { line-height:1.9 }
+
+  details.dt > summary { display:block; cursor:pointer; list-style:none;
+                          font-size:.95rem; margin:0 }
+  details.dt > summary::-webkit-details-marker { display:none }
+  details.dt > summary::before { content:"▸ "; color:var(--muted) }
+  details.dt[open] > summary::before { content:"▾ " }
+  details.dt > summary .more { color:var(--muted); font-size:.78rem;
+                                margin-left:.4rem }
+  details.dt[open] > summary { margin-bottom:.4rem }
+  .intro > summary { color:var(--muted); font-size:.85rem }
+  .lead { font-size:.88rem }
+}
+"""
 
 TEMPLATE = """<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
@@ -723,227 +956,9 @@ TEMPLATE = """<!DOCTYPE html>
 // やる (下の restore())。ブラウザより先に止めたいので head に置く。
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 </script>
-<style>
-:root {{
-  color-scheme: light dark;       /* 検索欄やスクロールバーも OS の設定に合わせる */
-  --bg:#fafafa; --surface:#fff; --bar:rgba(250,250,250,.96);
-  --text:#1a1a1a; --soft:#444; --muted:#6b6b6b; --faint:#999; --foot:#333;
-  --line:#d8d8d8; --head:#f4f4f4; --code:#f0f0f0;
-  --accent:#1a5fb4; --on-accent:#fff;
-  --chip-on:#1a1a1a; --on-chip:#fff;
-  --cat-bg:#eef2f8; --cat-line:#cfd9e8;
-  --virt:#a33; --warn-bg:#fff8e1; --warn-line:#e8d48b;
-}}
-@media (prefers-color-scheme: dark) {{
-  :root {{
-    --bg:#16181c; --surface:#1d2025; --bar:rgba(22,24,28,.96);
-    --text:#e6e6e6; --soft:#c2c6cc; --muted:#9aa0a6; --faint:#7a7f87; --foot:#c8ccd2;
-    --line:#33373e; --head:#22262c; --code:#2a2e35;
-    --accent:#83b0ec; --on-accent:#16181c;
-    --chip-on:#e6e6e6; --on-chip:#16181c;
-    --cat-bg:#22303f; --cat-line:#3a4d63;
-    --virt:#e39191; --warn-bg:#332c19; --warn-line:#6b5b2a;
-  }}
-}}
-* {{ box-sizing:border-box }}
-body {{ margin:0; padding:0 0 4rem; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
-        line-height:1.7; color:var(--text); background:var(--bg) }}
-header {{ padding:1.2rem 2rem 1rem; max-width:1500px; margin:0 auto }}
-.nav {{ font-size:.82rem; color:var(--muted); margin-bottom:.8rem }}
-.nav b {{ color:var(--text) }}
-.nav .soon {{ opacity:.5 }}
-h1 {{ font-size:1.6rem; margin:0 0 .4rem }}
-.lead {{ color:var(--muted); max-width:72ch; font-size:.92rem }}
-.meta {{ font-size:.8rem; color:var(--muted); margin-top:.8rem }}
-/* 検索欄・並べ替え・フィルタチップをまとめて画面の上に貼り付ける。
-   828 行をスクロールしている最中に絞り込みを変えたくなるので、
-   チップもここに入れて一緒に残す */
-.bar {{ position:sticky; top:0; z-index:9; background:var(--bar);
-        backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
-        padding:.7rem 2rem }}
-.ctl {{ display:flex; gap:1rem; align-items:center; flex-wrap:wrap }}
-.bar input {{ padding:.45rem .7rem; border:1px solid var(--line); border-radius:6px;
-              font-size:.9rem; width:22rem; max-width:50vw }}
-.bar button {{ padding:.4rem .7rem; border:1px solid var(--line); background:var(--surface);
-               color:inherit;
-               border-radius:6px; cursor:pointer; font-size:.85rem }}
-.bar button.on {{ background:var(--accent); color:var(--on-accent); border-color:var(--accent) }}
-.chips {{ margin:.6rem 0 0; display:flex; gap:.4rem; flex-wrap:wrap }}
-.chip {{ padding:.25rem .6rem; border:1px solid var(--line); background:var(--surface);
-         color:inherit; border-radius:999px;
-         cursor:pointer; font-size:.8rem; font-family:ui-monospace,Menlo,monospace }}
-.chip.on {{ background:var(--chip-on); color:var(--on-chip); border-color:var(--chip-on) }}
-#count {{ font-size:.85rem; color:var(--muted); margin-left:auto }}
-/* 1 字ずつ引くときの操作列。数千字を上から眺めるのは無理なので、
-   絞り込んだ集合から順不同で 1 字ずつ配る */
-.solo {{ display:none; margin:.6rem 0 0; gap:.5rem; align-items:center; flex-wrap:wrap }}
-.solo.on {{ display:flex }}
-.bar button.pri {{ background:var(--accent); color:var(--on-accent); border-color:var(--accent) }}
-#pos {{ font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums }}
-.keys {{ font-size:.78rem; color:var(--muted) }}
-.keys kbd {{ font:inherit; border:1px solid var(--line); border-radius:4px;
-             padding:0 .3rem; background:var(--surface) }}
-main {{ max-width:1500px; margin:0 auto; padding:0 2rem }}
-table {{ width:100%; border-collapse:collapse; background:var(--surface); margin-top:1.2rem;
-         border:1px solid var(--line); table-layout:fixed }}
-/* 800 行を超えると表の描画が重いので、画面外の行の描画を後回しにする */
-tbody tr {{ content-visibility:auto; contain-intrinsic-size:auto 220px }}
-th {{ text-align:left; font-size:.78rem; color:var(--muted); font-weight:600;
-      padding:.6rem .8rem; border-bottom:2px solid var(--line); background:var(--head) }}
-td {{ vertical-align:top; padding:1rem .8rem; border-bottom:1px solid var(--line);
-      font-size:.86rem; overflow-wrap:anywhere }}
-/* table-layout:fixed では先頭行ではなく colgroup で列幅を決める */
-col.c-g {{ width:110px }} col.c-id {{ width:250px }} col.c-src {{ width:380px }}
-/* 直接の子だけ。構成式の中に埋めた字形 (img.ig) まで 84px にしない */
-td.g {{ text-align:center }} td.g > img {{ width:84px; height:84px }}
-/* UK-source の字形は提出文書が抱えているフォントで出す。私用領域に置かれていて、
-   対応は Excel の PUA 欄。GlyphWiki から 3,409 件の SVG を取るより速く、
-   英国が提出した字形そのもの。テキストなので暗い配色でも色が付いてくる */
-@font-face {{ font-family:uk2015; src:url(../fonts/uk2015.ttf); font-display:block }}
-@font-face {{ font-family:uk2017; src:url(../fonts/uk2017.ttf); font-display:block }}
-@font-face {{ font-family:uk2021; src:url(../fonts/uk2021.ttf); font-display:block }}
-.uk {{ font-size:84px; line-height:1.05 }}
-/* まだ符号化されていない字は画像を出せないので、構成式をそのまま見せる */
-.ids {{ font-size:1.5rem; line-height:1.4; word-break:break-all }}
-/* 字形が出ているときの構成式。主役は字形なので小さく添える */
-.idsc {{ font-size:1rem; line-height:1.3; word-break:break-all; margin-top:.3rem;
-         color:var(--muted) }}
-.idsc img.ig {{ vertical-align:-.15em }}
-/* UAX #45 が符号位置の無い構成要素に置いている印。取得に失敗したように
-   見えるので、印だと分かる形にする */
-.qm {{ color:var(--muted); border:1px dashed currentColor; border-radius:3px;
-       padding:0 .1em; font-size:.8em; vertical-align:.1em }}
-/* 見間違えやすい相手。本体と同じ大きさで並べないと比べられない */
-.pair {{ display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.8rem }}
-img.pg {{ width:84px; height:84px; flex:0 0 auto }}
-@media (prefers-color-scheme: dark) {{ img.pg {{ filter:invert(1) }} }}
-.pt {{ min-width:0 }}
-.uk2015 {{ font-family:uk2015 }}
-.uk2017 {{ font-family:uk2017 }}
-.uk2021 {{ font-family:uk2021 }}
-/* GlyphWiki の SVG は fill="black" 固定。暗い配色では地に沈むので反転させる
-   (黒一色・背景は透明なので、反転すると白抜きになる) */
-@media (prefers-color-scheme: dark) {{ td.g > img {{ filter:invert(1) }} }}
-.cp {{ font-family:ui-monospace,Menlo,monospace; font-size:1rem; font-weight:600 }}
-.sub {{ color:var(--muted); font-size:.8rem }}
-.cats {{ margin:.35rem 0 }}
-.cat {{ display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:.75rem;
-        background:var(--cat-bg); border:1px solid var(--cat-line); border-radius:4px;
-        padding:.05rem .35rem; margin-right:.25rem; cursor:help }}
-.rd {{ font-size:.8rem; margin-top:.3rem }}
-.df {{ font-size:.8rem; color:var(--soft); font-style:italic; margin-top:.2rem }}
-.lk {{ font-size:.78rem; margin-top:.5rem; line-height:2 }}
-a {{ color:var(--accent) }}
-.h {{ font-size:.72rem; color:var(--muted); font-weight:600; margin:.2rem 0 .1rem; letter-spacing:.04em }}
-.src ul {{ margin:0 0 .7rem; padding-left:1.1rem }}
-.src li {{ margin-bottom:.3rem; font-size:.8rem }}
-code {{ font-family:ui-monospace,Menlo,monospace; font-size:.75rem; background:var(--code);
-        padding:.05rem .25rem; border-radius:3px }}
-.virt {{ color:var(--virt); font-size:.75rem }}
-.nolink {{ color:var(--faint); font-size:.78rem }}
-/* 本文中に埋める字形。フォントが持っていない字の代わりなので、前後の文字と
-   同じ大きさに合わせる。
-   CSS mask にして currentColor で塗る手もあるが、mask 画像は CORS の対象で
-   file:// から開くと読み込みに失敗し、字形が消える。手元で open docs/<slug>/index.html
-   する使い方があるので <img> のままにして、暗い配色では反転させる */
-img.ig {{ height:1.05em; width:1.05em; vertical-align:-.17em }}
-@media (prefers-color-scheme: dark) {{ img.ig {{ filter:invert(1) }} }}
-/* 字義の中で参照されている字は zi.tools へのリンクにする。1,300 か所を超えるので
-   青い下線では画面がうるさい。点線だけ引いて、押せることが分かる程度にする */
-a.zl {{ color:inherit; text-decoration:underline dotted;
-        text-decoration-color:var(--muted); text-underline-offset:.2em }}
-a.zl:hover {{ text-decoration-color:var(--accent) }}
-/* 中身が画像だと text-decoration が描かれないので、こちらは border で引く */
-a.igl {{ text-decoration:none; border-bottom:1px dotted var(--muted) }}
-a.igl:hover {{ border-bottom-color:var(--accent) }}
-a.igl:hover img.ig {{ opacity:.55 }}
-/* 差し替えた字そのもの。見せないが、選択とコピー、ページ内検索には乗る */
-.sr {{ position:absolute; width:1px; height:1px; overflow:hidden;
-       clip-path:inset(50%); white-space:nowrap }}
-/* 字義はこの表で唯一「読む」ところ。まわりの索引に合わせて小さくすると、
-   差し替えた字形 (明朝体なので線が細い) が潰れて読めない */
-ul.zi {{ margin:0 0 .7rem; padding-left:1.1rem }}
-ul.zi li {{ margin-bottom:.45rem; font-size:1rem }}
-.ja {{ color:var(--text) }} .ja::before {{ content:" — "; color:var(--muted) }}
-.zisrc {{ color:var(--muted); font-size:.8rem }}
-.zisrc::before {{ content:" / " }}
-.zinote {{ color:var(--muted); font-size:.8rem; line-height:1.5 }}
-.fig {{ color:var(--muted); font-size:.75rem; margin:.2rem 0 0 }}
-.note {{ border-left:3px solid var(--accent); padding:.1rem 0 .1rem .7rem }}
-.note b {{ font-size:.8rem }} .note p {{ margin:.2rem 0 .4rem; font-size:.83rem }}
-ul.ev {{ margin:.2rem 0 0; padding-left:1.1rem }}
-ul.ev li {{ font-size:.82rem; margin-bottom:.25rem }}
-.none {{ color:var(--faint); font-size:.8rem }}
-footer {{ max-width:1500px; margin:2.5rem auto 0; padding:0 2rem; font-size:.84rem; color:var(--foot) }}
-footer h2 {{ font-size:1rem; margin:1.6rem 0 .4rem }}
-footer ul {{ padding-left:1.2rem }}
-.warn {{ background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:6px;
-         padding:.8rem 1rem; margin-top:1rem }}
-/* 狭い画面で畳むための入れ物。広い画面では開いたまま使うので、見出しは消す */
-details.dt > summary {{ display:none }}
-.evh {{ display:none }}
-
-/* ── 狭い画面 ─────────────────────────────────────────────
-   4 列の表は幅 1,500px 前提で、スマホでは潰れて読めない。
-   表を崩して 1 字 1 枚のカードにし、出典は畳んでおく。 */
-@media (max-width: 900px) {{
-  header {{ padding:.9rem 1rem .6rem }}
-  .nav {{ margin-bottom:.5rem }}
-  h1 {{ font-size:1.25rem }}
-  .bar {{ padding:.6rem 1rem }}
-  .ctl {{ gap:.5rem }}
-  .bar input {{ width:100%; max-width:none }}
-  #count {{ margin-left:0 }}
-  .keys {{ display:none }}       /* 触る画面にキーの案内は要らない */
-  main, footer {{ padding:0 1rem }}
-  /* チップは 13 個あって折り返すと 3 行になる。貼り付けている帯が
-     画面の高さを食うので、1 行にして横に送る */
-  .chips {{ margin-top:.5rem; flex-wrap:nowrap;
-            overflow-x:auto; scrollbar-width:none }}
-  .chips::-webkit-scrollbar {{ display:none }}
-  .chip {{ flex:0 0 auto }}
-
-  colgroup, thead {{ display:none }}
-  table {{ display:block; border:none; background:none; margin-top:.8rem }}
-  tbody {{ display:block }}
-  /* 1 行 = 1 枚のカード。字形と見出しだけ横に並べ、残りは下へ流す */
-  tbody tr {{ display:grid; grid-template-columns:auto 1fr; gap:0 .7rem;
-              background:var(--surface); border:1px solid var(--line);
-              border-radius:8px; padding:.8rem; margin-bottom:.7rem;
-              contain-intrinsic-size:auto 380px }}
-  td {{ display:block; padding:0; border-bottom:none;
-        overflow-wrap:anywhere }}   /* 長い書誌や URL で横に溢れさせない */
-  td.g > img {{ width:56px; height:56px }}
-  .uk {{ font-size:56px }}
-  img.pg {{ width:56px; height:56px }}
-  .ids {{ font-size:1.2rem }}
-  /* 1 枚あたりの高さを詰める。コードポイントと block・画数は 1 行に収める */
-  td.id .cp, td.id .sub {{ display:inline }}
-  td.id .sub {{ margin-left:.5rem }}
-  .cats {{ margin:.2rem 0 }}
-  .cat {{ margin-bottom:.15rem }}
-  td.src, td.ev {{ grid-column:1 / -1 }}
-  td.src {{ margin-top:.5rem }}
-  td.ev {{ margin-top:.6rem }}
-  /* 提案文書まで辿れていない字は、同じ文言が 761 字ぶん並ぶだけなので出さない */
-  td.ev.nothing {{ display:none }}
-  .evh {{ display:block }}
-  .lk {{ line-height:1.9 }}
-
-  details.dt > summary {{ display:block; cursor:pointer; list-style:none;
-                          font-size:.95rem; margin:0 }}
-  details.dt > summary::-webkit-details-marker {{ display:none }}
-  details.dt > summary::before {{ content:"▸ "; color:var(--muted) }}
-  details.dt[open] > summary::before {{ content:"▾ " }}
-  details.dt > summary .more {{ color:var(--muted); font-size:.78rem;
-                                margin-left:.4rem }}
-  details.dt[open] > summary {{ margin-bottom:.4rem }}
-  .intro > summary {{ color:var(--muted); font-size:.85rem }}
-  .lead {{ font-size:.88rem }}
-}}
-</style></head><body>
-<header>
+<style>{style}</style></head><body>
 <nav class="nav">{nav}</nav>
+<header>
 <h1>{title} — 出典一覧</h1>
 <details class="dt intro" open><summary>このページについて</summary>
 <p class="lead">{lead}</p>
@@ -958,6 +973,7 @@ details.dt > summary {{ display:none }}
     <button data-sort="cp" class="on">コードポイント順</button>
     <button data-sort="strokes">画数順</button>
     <button id="lucky">ひとつずつ見る</button>
+    <button id="chiptog" aria-expanded="false" hidden></button>
     <span id="count"></span>
   </div>
   <div id="solo" class="solo">
@@ -1023,7 +1039,8 @@ UK-source の 3 通の提出文書は字ごとの一覧を Excel で抱えてい
 </div>
 </footer>
 <script>
-const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count');
+const tb=document.getElementById('tb'),q=document.getElementById('q'),count=document.getElementById('count'),
+      chips=document.querySelector('.chips'),chiptog=document.getElementById('chiptog');
 const rows=[...tb.rows];
 let cat='',sort='cp';
 let hits=[];                 // 直近の絞り込みに残った行。1 字ずつ引くときの母集団
@@ -1039,6 +1056,12 @@ function apply(){{
 function setCat(v){{
   cat=v;
   for(const c of document.querySelectorAll('.chip')) c.classList.toggle('on',c.dataset.cat===v);
+  chipLabel();
+}}
+// 畳んでいる間、何で絞り込んでいるかはこの見出しでしか分からない
+function chipLabel(){{
+  const on=document.querySelector('.chip.on');
+  chiptog.textContent='絞り込み: '+(on?on.textContent.trim():'すべて')+' ▾';
 }}
 function setSort(k){{
   sort=k;
@@ -1094,8 +1117,22 @@ function setSolo(on){{
 // 出典は <details open> で出しておいて、狭い画面のときだけ畳む。
 // CSS だけでやる手 (::details-content) は対応が新しく、外すと
 // 広い画面で開けなくなるので、失敗しても開いたままになるこちらにした。
+// コレクションの行と検索の帯を続けて貼り付ける。上の行の高さは文字の大きさと
+// 折り返しで変わるので、測って渡す。
+const navEl=document.querySelector('.nav');
+function navh(){{
+  document.documentElement.style.setProperty('--navh',navEl.offsetHeight+'px');
+}}
+addEventListener('resize',navh); navh();
+
 const narrow=matchMedia('(max-width: 900px)');
-function fold(){{ for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches; }}
+function fold(){{
+  for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches;
+  // 広い画面では畳む余地が無いので、見出しごと消して常に開いておく
+  chiptog.hidden=!narrow.matches;
+  chips.classList.toggle('open',!narrow.matches);
+  chipLabel(); navh();
+}}
 narrow.addEventListener('change',()=>{{fold(); if(solo) showOne();}});
 
 // ⌘R したときに見た目を戻す。絞り込みも並べ替えもここでやっているので、
@@ -1177,9 +1214,14 @@ for(const c of document.querySelectorAll('.chip'))
     if(c.dataset.cat===cat) return;
     save();                          // 今いる場所を、今のチップのぶんとして残す
     setCat(c.dataset.cat); apply();
+    if(narrow.matches) chips.classList.remove('open');   // 選んだら畳む
     if(!solo) goTo(pos[cat]);        // 前に見ていた場所へ。無ければ先頭
     save();
   }});
+chiptog.addEventListener('click',()=>{{
+  const on=chips.classList.toggle('open');
+  chiptog.setAttribute('aria-expanded',on);
+}});
 for(const b of document.querySelectorAll('[data-sort]'))
   b.addEventListener('click',()=>{{setSort(b.dataset.sort);save();}});
 lucky.addEventListener('click',()=>{{setSolo(!solo);save();}});

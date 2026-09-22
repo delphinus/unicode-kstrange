@@ -355,3 +355,134 @@ describe.if(READY)("1 字ずつ引く", () => {
     }
   }, 30_000);
 });
+
+describe.if(READY)("上に貼り付けた行", () => {
+  test("同じタブで移れる", async () => {
+    const p = await open("/kstrange/");
+    const links = await p.evaluate(() =>
+      [...document.querySelectorAll(".nav a")].map((a) => ({
+        href: (a as HTMLAnchorElement).getAttribute("href"),
+        target: (a as HTMLAnchorElement).target,
+      })));
+    expect(links.every((l) => l.target === "")).toBe(true);
+    // 実際に押して、タブが増えず同じタブで移ること
+    const before = (await browser.pages()).length;
+    await p.evaluate(() =>
+      (document.querySelector('.nav a[href="../uk/"]') as HTMLElement).click());
+    await p.waitForNavigation({ waitUntil: "load" });
+    expect(p.url()).toEndWith("/uk/");
+    expect((await browser.pages()).length).toBe(before);
+    await p.close();
+  }, 30_000);
+
+  test("スクロールしても上に残る", async () => {
+    const p = await open("/kstrange/");
+    await p.evaluate(() => scrollTo(0, 5000));
+    await Bun.sleep(500);
+    const r = await p.evaluate(() => {
+      const n = document.querySelector(".nav")!.getBoundingClientRect();
+      const b = document.querySelector(".bar")!.getBoundingClientRect();
+      return { navTop: Math.round(n.top), barTop: Math.round(b.top),
+               navBottom: Math.round(n.bottom) };
+    });
+    expect(r.navTop).toBe(0);
+    // 帯は行のすぐ下に続く (重ならない)
+    expect(Math.abs(r.barTop - r.navBottom)).toBeLessThanOrEqual(1);
+    await p.close();
+  });
+
+  test("狭い画面ではチップを畳む", async () => {
+    const p = await open("/kstrange/", 420, 860);
+    const shut = await p.evaluate(() => ({
+      open: document.querySelector(".chips")!.classList.contains("open"),
+      label: document.getElementById("chiptog")!.textContent,
+      h: Math.round(document.querySelector(".chips")!.getBoundingClientRect().height),
+    }));
+    expect(shut.open).toBe(false);
+    expect(shut.h).toBe(0);
+    expect(shut.label).toBe("絞り込み: すべて 828 ▾");
+    // 開いて選ぶと、また畳まれる
+    await p.evaluate(() => (document.getElementById("chiptog") as HTMLElement).click());
+    await Bun.sleep(200);
+    expect(await p.evaluate(() =>
+      document.querySelector(".chips")!.classList.contains("open"))).toBe(true);
+    await clickChip(p, "S");
+    await Bun.sleep(300);
+    const after = await p.evaluate(() => ({
+      open: document.querySelector(".chips")!.classList.contains("open"),
+      label: document.getElementById("chiptog")!.textContent,
+      shown: [...document.querySelectorAll("#tb tr")]
+        .filter((r) => (r as HTMLElement).style.display !== "none").length,
+    }));
+    expect(after.open).toBe(false);
+    expect(after.label).toBe("絞り込み: S 26 ▾");
+    expect(after.shown).toBe(26);
+    await p.close();
+  });
+});
+
+describe.if(READY)("ひとつずつ引くページ", () => {
+  const card = () => ({
+    cp: document.querySelector("#card .cp")?.textContent ?? null,
+    from: document.getElementById("from")?.textContent ?? "",
+    pos: document.getElementById("pos")?.textContent ?? "",
+    rows: document.querySelectorAll("#card tbody tr").length,
+  });
+  const openLucky = async () => {
+    const p = await open("/lucky/");
+    await Bun.sleep(1800);
+    return p;
+  };
+
+  test("全ての一覧から出る", async () => {
+    const p = await openLucky();
+    const from = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const s = await p.evaluate(card);
+      expect(s.rows).toBe(1);
+      expect(s.cp).toBeTruthy();
+      from.add(s.from);
+      await p.evaluate(() => (document.getElementById("nx") as HTMLElement).click());
+      await Bun.sleep(i < 8 ? 900 : 120);
+    }
+    // 4 つのうち少なくとも 3 つは 40 回で当たる (uk が 62% を占める)
+    expect(from.size).toBeGreaterThanOrEqual(3);
+    await p.close();
+  }, 60_000);
+
+  test("同じ字を続けて出さない・前の字へ戻れる", async () => {
+    const p = await openLucky();
+    const seen: (string | null)[] = [];
+    for (let i = 0; i < 10; i++) {
+      seen.push((await p.evaluate(card)).cp);
+      await p.evaluate(() => (document.getElementById("nx") as HTMLElement).click());
+      await Bun.sleep(700);
+    }
+    expect(new Set(seen).size).toBe(10);
+    const now = (await p.evaluate(card)).cp;
+    await p.evaluate(() => (document.getElementById("prev") as HTMLElement).click());
+    await Bun.sleep(500);
+    expect((await p.evaluate(card)).cp).toBe(seen[9]);
+    expect(now).not.toBe(seen[9]);
+    await p.close();
+  }, 60_000);
+
+  test("再読み込みで同じ字に戻る", async () => {
+    const p = await openLucky();
+    await p.evaluate(() => (document.getElementById("nx") as HTMLElement).click());
+    await Bun.sleep(900);
+    const before = await p.evaluate(card);
+    await p.reload({ waitUntil: "load" });
+    await Bun.sleep(1800);
+    expect(await p.evaluate(card)).toEqual(before);
+    await p.close();
+  }, 40_000);
+
+  test("トップページから行ける", async () => {
+    const p = await open("/");
+    const href = await p.evaluate(() =>
+      document.querySelector("a.lucky")?.getAttribute("href"));
+    expect(href).toBe("lucky/");
+    await p.close();
+  });
+});

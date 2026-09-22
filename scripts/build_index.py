@@ -44,6 +44,12 @@ a.card:hover {{ border-color:var(--accent) }}
 .n {{ float:right; color:var(--muted); font-size:.85rem; font-weight:400 }}
 .d {{ color:var(--muted); font-size:.85rem; margin-top:.2rem }}
 .soon {{ opacity:.55 }}
+/* 上から眺めるには多すぎるので、こちらから当たる口も置く */
+a.lucky {{ display:block; text-align:center; text-decoration:none;
+           background:var(--accent); color:#fff; border-radius:10px;
+           padding:.9rem 1.2rem; margin:0 0 1.6rem; font-weight:600 }}
+a.lucky .s {{ display:block; font-weight:400; font-size:.8rem; opacity:.85 }}
+@media (prefers-color-scheme: dark) {{ a.lucky {{ color:#16181c }} }}
 footer {{ color:var(--muted); font-size:.8rem; margin-top:2rem }}
 footer a {{ color:var(--accent) }}
 </style></head><body>
@@ -51,6 +57,7 @@ footer a {{ color:var(--accent) }}
 <h1>漢字</h1>
 <p class="lead">Unihan から、<b>その字がどこで使われていたのか</b>を辿れるところまで辿って
 一覧にしたもの。字形は GlyphWiki の SVG なので、フォントの有無にかかわらず表示される。</p>
+<a class="lucky" href="lucky/">ひとつずつ見る<span class="s">{total:,} 字から順不同に 1 字ずつ</span></a>
 {cards}
 <footer>生成 {now} ·
 <a href="https://github.com/delphinus/unicode-kstrange">生成スクリプト</a></footer>
@@ -59,12 +66,13 @@ footer a {{ color:var(--accent) }}
 
 
 def main():
-    cards = []
+    cards, total = [], 0
     for c in toml("collections.toml")["collection"]:
         meta = DOCS / c["slug"] / "meta.json"
         title, lead = html.escape(c["title"]), html.escape(c["lead"])
         if meta.exists():
             m = json.loads(meta.read_text(encoding="utf-8"))
+            total += m["count"]
             cards.append(
                 f'<a class="card" href="{c["slug"]}/">'
                 f'<span class="n">{m["count"]:,} 字</span>'
@@ -80,7 +88,7 @@ def main():
     DOCS.mkdir(parents=True, exist_ok=True)
     out = DOCS / "index.html"
     out.write_text(TEMPLATE.format(
-        cards="\n".join(cards),
+        cards="\n".join(cards), total=total,
         now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")), encoding="utf-8")
     log(f"{out} を書いた ({len(cards)} 件)")
 

@@ -4,9 +4,9 @@ PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
 .PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
-        index test test-browser check check-links check-utn43 clean distclean
+        index lucky test test-browser check check-links check-utn43 clean distclean
 
-all: fetch glyphs wiktionary zi-tools uk-source l2docs html index
+all: fetch glyphs wiktionary zi-tools uk-source l2docs html index lucky
 
 ## 入力データ (Unihan ほか) を cache/ へ取得し、版とハッシュを記録する
 fetch:
@@ -40,6 +40,10 @@ html:
 index:
 	$(SCRIPTS) scripts/build_index.py
 
+## ひとつずつ引くページ docs/lucky/index.html を組み立てる (一覧のあとで)
+lucky:
+	$(SCRIPTS) scripts/build_lucky.py
+
 ## 生成物の中身を確かめる (標準ライブラリだけ、ブラウザ不要)
 test:
 	$(SCRIPTS) -m unittest discover -s tests
@@ -65,7 +69,7 @@ check-utn43:
 ## 生成物を消す (取得済みの入力は残す)
 clean:
 	rm -f docs/index.html
-	rm -rf docs/glyphs docs/fonts docs/kstrange docs/uk docs/spoofing
+	rm -rf docs/glyphs docs/fonts docs/lucky docs/kstrange docs/uk docs/u-source docs/spoofing
 
 ## 取得済みの入力も消す
 distclean: clean
