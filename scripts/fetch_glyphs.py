@@ -13,8 +13,8 @@ import time
 import urllib.error
 import urllib.request
 
-from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, spoofing_pairs,
-                    targets, toml, unihan, usource)
+from common import (CACHE, DATA, GLYPHS, UA, log, mentioned, sources_of,
+                    spoofing_pairs, targets, toml, unihan, usource)
 
 URL = "https://glyphwiki.org/glyph/u{hex}.svg"
 # まだ符号化されていない登録にも GlyphWiki は字形を持っている。コードポイントが
@@ -116,6 +116,24 @@ def main():
         else:
             un += 1
     log(f"まだ符号化されていない登録: 取得 {ug} / 既存 {us} / GlyphWiki に無い {un}")
+
+    # 国ごとの字形。日本の形を既定に使い、複数あるものは見比べられるようにする。
+    # Unihan のソース欄にあるものだけ引くので、無駄打ちにならない。
+    want = sorted(set(cps) | set(pairs), key=lambda x: int(x[2:], 16))
+    sg = ss = sn = 0
+    for cp in want:
+        h = cp[2:].lower()
+        for sfx, *_ in sources_of(uni.get(cp, {})):
+            dest = GLYPHS / f"u{h}-{sfx}.svg"
+            if dest.exists() and not args.force:
+                ss += 1
+                continue
+            if grab(f"https://glyphwiki.org/glyph/u{h}-{sfx}.svg", dest, f"{cp}-{sfx}",
+                    quiet=True):
+                sg += 1
+            else:
+                sn += 1
+    log(f"国ごとの字形: 取得 {sg} / 既存 {ss} / GlyphWiki に無い {sn}")
     # 表に出す字が欠けるのは困るが、文中に出てくるだけの字は素のテキストで出せば
     # 済む (GlyphWiki に無い新しい字がある)。落とすのは前者のときだけ。
     if set(failed) - set(extra):

@@ -8,14 +8,15 @@
 """
 import argparse
 import datetime
+import hashlib
 import html
 import json
 import pathlib
 import re
 
 from common import (CACHE, DATA, DOCS, GLYPHS, UNICODE_VERSION, UTN43_REVISION,
-                    blocks, log, manifest, needs_glyph, radicals, spoofing_pairs,
-                    targets, toml, unihan, usource)
+                    blocks, log, manifest, needs_glyph, radicals, sources_of,
+                    spoofing_pairs, targets, toml, unihan, usource)
 
 # 康熙字典網上版。ページ画像 (/kangxi/<4 桁>.gif) は Referer でホットリンクを弾かれ、
 # 外部から辿ると mainlogos.jpg に飛ばされるので、サイト側の字頭検索へリンクする。
@@ -101,6 +102,7 @@ TR = """
     <div class="cp">{cp}</div>
     <div class="sub">{block} · {strokes_txt} 画</div>
     <div class="cats">{cats}</div>
+    {forms}
     {readings}
     {df}
     <div class="lk">{links}</div>
@@ -134,6 +136,7 @@ class Builder:
         self.blocks = blocks()
         self.usrc = usource()
         self.rad = radicals()
+        self._forms = {}
         self.cats = toml("categories.toml")
         self.srcmap = toml("irg_sources.toml")["prefix"]
         self.books = toml("books.toml")
@@ -528,7 +531,7 @@ class Builder:
             glyph=glyph,
             block=self.radical(v["rs"]) or f"部首 {rad}",
             strokes_txt=res or "0", cats=cats,
-            readings="", df="", links=" · ".join(links),
+            forms="", readings="", df="", links=" · ".join(links),
             summary=html.escape(v.get("comment") or st), evhead=self.evhead,
             srcbody=src, evnone="", note=note)
 
@@ -616,6 +619,7 @@ class Builder:
             block=" · ".join(x for x in (self.block_of(cp),
                                          self.radical(v.get("kRSUnicode"))) if x),
             strokes_txt=v["kTotalStrokes"], cats=cats,
+            forms=self.form_html(cp),
             readings=('<div class="rd">' + " / ".join(readings) + "</div>"
                       if readings else ""),
             df=self.definition(v.get("kDefinition")),
@@ -693,7 +697,15 @@ class Builder:
         return targets(self.uni, self.category)
 
     def facets(self, cp):
-        """絞り込みの分類。kStrange はカテゴリ、UK-source は提出した作業集合。"""
+        """絞り込みの分類。kStrange はカテゴリ、UK-source は提出した作業集合。
+
+        どのコレクションでも「字形に差」を足す。国によって形が違う字だけを
+        並べられると、包摂の実例を眺められる。
+        """
+        extra = ["字形に差"] if self.forms(cp) else []
+        return self.base_facets(cp) + extra
+
+    def base_facets(self, cp):
         if self.spec.get("facet") == "block":
             return [self.block_of(cp)]
         if self.spec.get("facet") == "status":
@@ -727,6 +739,60 @@ class Builder:
         ch = self.rad.get(num, "")
         return f"部首 {num}{' ' + ch if ch else ''}"
 
+    def forms(self, cp):
+        """その字の国別字形を、形ごとにまとめて返す。
+
+        Unicode は各国で少し形の違う字を 1 つの符号位置にまとめている (包摂) ので、
+        符号位置は 1 つでも国ごとに違う形がありうる。同じ形のソースは 1 つにまとめ、
+        [(SVG のパス, [(国名, 略, ソース参照), …]), …] を日本から順に返す。
+
+        形が 1 通りしか無ければ空を返す (見比べるものが無い)。
+        """
+        got = self._forms.get(cp)
+        if got is not None:
+            return got
+        lhex = cp[2:].lower()
+        by_shape, order = {}, []
+        for sfx, name, ab, ref in sources_of(self.uni.get(cp, {})):
+            f = GLYPHS / f"u{lhex}-{sfx}.svg"
+            if not f.exists():
+                continue
+            key = hashlib.md5(f.read_bytes()).hexdigest()
+            if key not in by_shape:
+                by_shape[key] = (f"../glyphs/u{lhex}-{sfx}.svg", [])
+                order.append(key)
+            by_shape[key][1].append((name, ab, ref))
+        out = [by_shape[k] for k in order] if len(order) > 1 else []
+        self._forms[cp] = out
+        return out
+
+    def form_html(self, cp):
+        """国別字形の見比べ。差がある字にだけ出す。"""
+        fs = self.forms(cp)
+        if not fs:
+            return ""
+        abbr = " ".join(ab for _, ss in fs for _, ab, _ in ss)
+        cells = "".join(
+            f'<div class="sv1"><img src="{path}" alt="" loading="lazy">'
+            f'<div class="svn">{" / ".join(n for n, _, _ in ss)}</div>'
+            f'<div class="svr">{"<br>".join(html.escape(r) for _, _, r in ss)}</div>'
+            '</div>' for path, ss in fs)
+        # 重ねるほう。n 枚を 1/n の濃さで重ねると、濃い所が共通・薄い所が
+        # どれか 1 つだけ、と読める。色を分ける手もあるが、黒一色の SVG を
+        # 染めるには mask が要り、file:// から開くと読み込みに失敗する
+        lay = "".join(f'<div class="svl"><img src="{path}" alt="" loading="lazy"></div>'
+                      for path, _ in fs)
+# dt は付けない。あれは「狭い画面で畳む」印で、fold() が広い画面では
+        # 開けてしまう。ここは幅にかかわらず畳んでおきたい
+        return (f'<details class="sv"><summary>字形 {len(fs)} 種 '
+                f'<span class="more">({abbr})</span></summary>'
+                f'<div class="svbody" data-n="{len(fs)}">'
+                f'<div class="svrow">{cells}</div>'
+                f'<div class="svov"><div class="svstack">{lay}</div>'
+                f'<div class="svcap">重ねたところ。濃い所が共通で、'
+                f'薄い所はどれか 1 つにしかない</div></div>'
+                f'<button class="svbtn">重ねる</button></div></details>')
+
     def glyph_cell(self, cp, lhex):
         """字形。kStrange は GlyphWiki の SVG、UK-source は提出文書の添付フォント。"""
         if self.spec.get("glyph") == "ukfont":
@@ -736,7 +802,10 @@ class Builder:
                 return (f'<span class="uk {r["font"]}">&#x{r["pua"]};</span>'
                         f'<span class="sr">{ch}</span>')
             return '<span class="none">字形なし</span>'
-        return f'<img src="../glyphs/u{lhex}.svg" alt="{cp}" loading="lazy">'
+        # 日本語で読むページなので、日本の形があればそれを出す。無ければ既定
+        jp = GLYPHS / f"u{lhex}-j.svg"
+        src = f"u{lhex}-j.svg" if jp.exists() else f"u{lhex}.svg"
+        return f'<img src="../glyphs/{src}" alt="{cp}" loading="lazy">'
 
     def build(self):
         cps = self.select()
@@ -898,6 +967,35 @@ td.g { text-align:center } td.g > img { width:84px; height:84px }
    見えるので、印だと分かる形にする */
 .qm { color:var(--muted); border:1px dashed currentColor; border-radius:3px;
        padding:0 .1em; font-size:.8em; vertical-align:.1em }
+/* 国ごとの字形の見比べ。差がある字にだけ出るので、閉じている間は 1 行 */
+details.sv > summary { display:block; cursor:pointer; list-style:none;
+                        font-size:.78rem; color:var(--muted); margin:.3rem 0 }
+details.sv > summary::-webkit-details-marker { display:none }
+details.sv > summary::before { content:"▸ "; }
+details.sv[open] > summary::before { content:"▾ "; }
+.svbody { margin:.2rem 0 .5rem }
+.svrow { display:flex; gap:.7rem; flex-wrap:wrap }
+.sv1 { text-align:center }
+.sv1 img { width:64px; height:64px; background:#fff; border-radius:3px }
+.svn { font-size:.72rem; margin-top:.15rem }
+.svr { font-size:.68rem; color:var(--muted); font-family:ui-monospace,Menlo,monospace }
+/* 重ねるほう。n 枚を 1/n の濃さで重ねると、濃い所が共通・薄い所が片方だけになる。
+   色を分けるには黒一色の SVG を染める必要があり、それには mask が要る。
+   mask 画像は CORS の対象で file:// から開くと読み込みに失敗するので使わない */
+.svov { display:none }
+.svbody.on .svrow { display:none }
+.svbody.on .svov { display:block }
+.svstack { position:relative; width:96px; height:96px; background:#fff; border-radius:3px }
+.svl { position:absolute; inset:0 }
+.svl img { width:100%; height:100% }
+.svbody[data-n="2"] .svl { opacity:.5 }
+.svbody[data-n="3"] .svl { opacity:.34 }
+.svbody[data-n="4"] .svl { opacity:.25 }
+.svbody[data-n="5"] .svl { opacity:.2 }
+.svcap { font-size:.72rem; color:var(--muted); margin-top:.2rem; max-width:22rem }
+.svbtn { margin-top:.35rem; padding:.15rem .5rem; font-size:.72rem; cursor:pointer;
+          border:1px solid var(--line); background:var(--surface); color:inherit;
+          border-radius:5px }
 /* 見間違えやすい相手。本体と同じ大きさで並べないと比べられない */
 .pair { display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.8rem }
 img.pg { width:84px; height:84px; flex:0 0 auto }
@@ -1306,6 +1404,12 @@ for(const c of document.querySelectorAll('.chip'))
     if(!solo) goTo(pos[cat]);        // 前に見ていた場所へ。無ければ先頭
     save();
   }});
+// 国ごとの字形を「横に並べる」と「重ねる」で切り替える
+tb.addEventListener('click',e=>{{
+  const b=e.target.closest('.svbtn'); if(!b) return;
+  const box=b.closest('.svbody'), on=box.classList.toggle('on');
+  b.textContent=on?'横に並べる':'重ねる';
+}});
 chiptog.addEventListener('click',()=>{{
   const on=chips.classList.toggle('open');
   chiptog.setAttribute('aria-expanded',on);

@@ -503,3 +503,81 @@ describe.if(READY)("重さ", () => {
     await p.close();
   }, 90_000);
 });
+
+describe.if(READY)("国ごとの字形", () => {
+  test("閉じている間は場所を取らず、開くと並ぶ", async () => {
+    const p = await open("/spoofing/");
+    await p.type("#q", "U+4C17");
+    await Bun.sleep(500);
+    const shut = await p.evaluate(() => {
+      const d = document.querySelector("#tb tr:not([style*='none']) details.sv")!;
+      return { open: (d as HTMLDetailsElement).open,
+               見出し: d.querySelector("summary")?.textContent?.replace(/\s+/g, " ").trim(),
+               並び: d.querySelectorAll(".sv1").length,
+               // 中身は content-visibility:hidden なので、getBoundingClientRect は
+               // 描画されていなくても実寸を返す。<details> 自体の高さで見る
+               高さ: Math.round(d.getBoundingClientRect().height) };
+    });
+    expect(shut.open).toBe(false);
+    expect(shut.見出し).toBe("字形 3 種 (日 中 台)");
+    expect(shut.高さ).toBeLessThan(40);      // 見出し 1 行ぶんだけ
+
+    await p.evaluate(() =>
+      ((document.querySelector("#tb tr:not([style*='none']) details.sv") as HTMLDetailsElement).open = true));
+    await Bun.sleep(300);
+    const o = await p.evaluate(() => {
+      const d = document.querySelector("#tb tr:not([style*='none']) details.sv")!;
+      return { 高さ: Math.round(d.getBoundingClientRect().height),
+               国: [...d.querySelectorAll(".svn")].map((x) => x.textContent),
+               参照: [...d.querySelectorAll(".svr")].map((x) => x.textContent),
+               重ね: getComputedStyle(d.querySelector(".svov")!).display };
+    });
+    expect(o.高さ).toBeGreaterThan(100);     // 開けば並ぶ
+    expect(o.国).toEqual(["日本", "中国", "台湾"]);
+    expect(o.参照[0]).toBe("JA3-7E3E");
+    expect(o.重ね).toBe("none");
+    await p.close();
+  }, 40_000);
+
+  test("重ねると 1 枚に切り替わる", async () => {
+    const p = await open("/spoofing/");
+    await p.type("#q", "U+4C17");
+    await Bun.sleep(500);
+    await p.evaluate(() =>
+      ((document.querySelector("#tb tr:not([style*='none']) details.sv") as HTMLDetailsElement).open = true));
+    await Bun.sleep(200);
+    await p.evaluate(() =>
+      (document.querySelector("#tb tr:not([style*='none']) .svbtn") as HTMLElement).click());
+    await Bun.sleep(300);
+    const o = await p.evaluate(() => {
+      const d = document.querySelector("#tb tr:not([style*='none']) details.sv")!;
+      const l = d.querySelector(".svl")!;
+      return { 横: getComputedStyle(d.querySelector(".svrow")!).display,
+               重ね: getComputedStyle(d.querySelector(".svov")!).display,
+               枚数: d.querySelectorAll(".svl").length,
+               濃さ: getComputedStyle(l).opacity,
+               ボタン: d.querySelector(".svbtn")?.textContent };
+    });
+    expect(o.横).toBe("none");
+    expect(o.重ね).toBe("block");
+    expect(o.枚数).toBe(3);
+    expect(Number(o.濃さ)).toBeCloseTo(0.34, 2);   // 3 枚なので 1/3 ずつ
+    expect(o.ボタン).toBe("横に並べる");
+    await p.close();
+  }, 40_000);
+
+  test("差のある字だけに絞り込める", async () => {
+    const p = await open("/spoofing/");
+    await clickChip(p, "字形に差");
+    await Bun.sleep(400);
+    const s = await p.evaluate(() => {
+      const rows = [...document.querySelectorAll("#tb tr")]
+        .filter((r) => (r as HTMLElement).style.display !== "none");
+      return { 件数: rows.length,
+               全部に比較がある: rows.every((r) => r.querySelector("details.sv")) };
+    });
+    expect(s.件数).toBe(190);
+    expect(s.全部に比較がある).toBe(true);
+    await p.close();
+  }, 40_000);
+});

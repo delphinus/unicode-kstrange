@@ -138,6 +138,28 @@ def radicals() -> dict[str, str]:
     return out
 
 
+# 国ごとの字形。Unicode は各国で少し形の違う字を 1 つの符号位置にまとめている
+# (包摂) ので、1 つの符号位置に「どの国の形か」が複数ぶら下がっている。
+# GlyphWiki は u4c17-j のように接尾辞で持っていて、Unihan のソース欄と対応する。
+# GlyphWiki が返すのはこの 7 つだけ (kIRG_MSource と kIRG_SSource は無い)。
+# 日本を先頭に置く。既定で出すのは日本の形なので、並びもそれに合わせる
+SOURCES = {
+    "kIRG_JSource": ("j", "日本", "日"),
+    "kIRG_GSource": ("g", "中国", "中"),
+    "kIRG_TSource": ("t", "台湾", "台"),
+    "kIRG_KSource": ("k", "韓国", "韓"),
+    "kIRG_KPSource": ("kp", "北朝鮮", "朝"),
+    "kIRG_HSource": ("h", "香港", "港"),
+    "kIRG_VSource": ("v", "ベトナム", "越"),
+}
+
+
+def sources_of(v: dict) -> list[tuple[str, str, str, str]]:
+    """その字が持つ国別ソース。(接尾辞, 国名, 1 文字の略, ソース参照)。"""
+    return [(sfx, name, ab, v[k])
+            for k, (sfx, name, ab) in SOURCES.items() if v.get(k)]
+
+
 def toml(name: str) -> dict:
     return tomllib.loads((DATA / name).read_text(encoding="utf-8"))
 

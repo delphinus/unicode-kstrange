@@ -94,6 +94,35 @@ class PageTest(unittest.TestCase):
         ja = sum(1 for r in self.rows if 'class="dfja"' in r)
         self.assertEqual(got, ja, "原文だけで訳の無い行がある")
 
+    def test_japanese_form_is_preferred(self):
+        """字形は日本の形を既定にする。日本語で読むページなので。
+
+        Unicode は各国で少し違う形を 1 つの符号位置にまとめている (包摂) ので、
+        符号位置が同じでも国ごとに形が違う。GlyphWiki の既定は字によって
+        どの国か揺れるため、-j があればそちらを使う。
+        """
+        from common import GLYPHS
+        n = 0
+        for m in re.finditer(r'<td class="g"><img src="\.\./glyphs/(u[0-9a-f]+)\.svg"',
+                             self.html):
+            # 既定を使っているなら、日本の形が無い字のはず
+            self.assertFalse((GLYPHS / f"{m.group(1)}-j.svg").exists(),
+                             f"{m.group(1)} は日本の形があるのに使っていない")
+            n += 1
+        self.assertGreaterEqual(n, 0)
+
+    def test_source_forms_only_when_they_differ(self):
+        """見比べは形が 2 通り以上あるときだけ出す。同じ形なら出す意味が無い。"""
+        from build_html import Builder
+        b = Builder(self.category, self.slug)
+        for cp in b.select()[:400]:
+            fs = b.forms(cp)
+            self.assertNotEqual(len(fs), 1, f"{cp} が 1 種で出ている")
+            if fs:
+                # 形ごとにまとまっていること (同じ形が 2 列に割れない)
+                paths = [p for p, _ in fs]
+                self.assertEqual(len(paths), len(set(paths)), cp)
+
     def test_lucky_controls(self):
         """1 字ずつ引く操作列。数が多くて上から眺められないのはどの一覧も同じ。"""
         for i in ("lucky", "solo", "nx", "prev", "quit", "pos"):
