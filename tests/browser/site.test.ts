@@ -486,3 +486,20 @@ describe.if(READY)("ひとつずつ引くページ", () => {
     await p.close();
   });
 });
+
+describe.if(READY)("重さ", () => {
+  test("一番大きい一覧でも待たされない", async () => {
+    // UK-source は 3,409 行・8 MB。字義を入れたとき 22 秒掛かるようになった。
+    // <details> が読み込みで全件ぶん toggle を出すのに、その度に
+    // querySelectorAll とレイアウトを走らせていたのが原因。
+    const p = await browser.newPage();
+    await p.setViewport({ width: 1400, height: 900 });
+    const t0 = Date.now();
+    await p.goto(`${ROOT}/uk/`, { waitUntil: "load", timeout: 60_000 });
+    const ms = Date.now() - t0;
+    expect(await p.evaluate(() =>
+      document.querySelectorAll("#tb tr").length)).toBe(3409);
+    expect(ms).toBeLessThan(10_000);
+    await p.close();
+  }, 90_000);
+});

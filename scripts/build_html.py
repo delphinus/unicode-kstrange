@@ -53,7 +53,35 @@ VIRT = ' <span class="virt">(仮想位置 — その字書には載っていな�
 # zi.tools の字義の半分近くが「同=X」「同「X」」「同=X(Y)」の形をしている。
 # 訳語表に 1 件ずつ書く意味が無いので、ここで機械的に訳す。空白が入るものは
 # 「同=X <語釈>」のように語釈が続いているので、訳語表のほうで訳す。
-SAME_AS = re.compile(r"同[=「]([^」\s]+)」?")
+# zi.tools の字義には「この字は X の〇〇だ」とだけ書いた決まった形が多い。
+# UK-source を足したら 1,200 件を超えたので、訳語表に 1 件ずつ書くのをやめて
+# ここで機械的に訳す。X は「」で囲んで返し、字形の差し替えとリンクに乗せる。
+# 語釈が続くもの (「同=X <語釈>」など) は当たらないので、訳語表のほうで訳す。
+FORMULA = [
+    (re.compile(r"同[=「]([^」\s]+)」?"), "「{}」に同じ"),
+    (re.compile(r"[=「]?([^」\s]+?)」?的(?:类推简化字|類推簡化字)"), "「{}」の類推簡化字"),
+    (re.compile(r"「([^」\s]+)」的(?:简化字|簡化字)"), "「{}」の簡体字"),
+    (re.compile(r"「([^」\s]+)」的(?:简化部件|簡化部件)"), "「{}」を簡略化した構成要素"),
+    (re.compile(r"「([^」\s]+)」的二簡字，已廢止"), "「{}」の二簡字 (廃止済み)"),
+    (re.compile(r"「([^」\s]+)」(?:字訛。?|字之訛。|的訛字|的讹字)"), "「{}」の誤った字体"),
+    (re.compile(r"「([^」\s]+)」俗譌字"), "「{}」の俗な誤字"),
+    (re.compile(r"「([^」\s]+)」的錯誤隸定字"), "「{}」の誤った隷定字"),
+    (re.compile(r"「([^」\s]+)」的(?:異體字|异体字)"), "「{}」の異体字"),
+    (re.compile(r"「([^」\s]+)」的(?:合字|合體字)"), "「{}」の合字"),
+    (re.compile(r"「([^」\s]+)」的合音字?"), "「{}」の合音字"),
+    # ベトナムの喃字。Như は「〜に同じ」
+    (re.compile(r"◎ Như (\S+) (\S+)"), "◎ 「{}」に同じ。{}"),
+    (re.compile(r"壯字，?用同「([^」]+)」"), "壮語の字。「{}」と同じ使い方"),
+    (re.compile(r"楚簡隸定字，同「([^」]+)」"), "楚簡を隷定した字。「{}」に同じ"),
+    (re.compile(r"楚簡隸定字，通「([^」]+)」"), "楚簡を隷定した字。「{}」に通じる"),
+    (re.compile(r"字見於韓國最高法院漢字系統，讀音(\S+)"),
+     "韓国大法院の漢字表にある字。読み {}"),
+    (re.compile(r"道教俗字，同「([^」]+)」"), "道教の俗字。「{}」に同じ"),
+    (re.compile(r"金文隸定字，同「([^」]+)」"), "金文を隷定した字。「{}」に同じ"),
+    (re.compile(r"甲骨文隸定字，同「([^」]+)」"), "甲骨文を隷定した字。「{}」に同じ"),
+    (re.compile(r"晉系文字隷定字，同「([^」]+)」"), "晋系文字を隷定した字。「{}」に同じ"),
+    (re.compile(r"疑同「([^」]+)」"), "「{}」と同じか"),
+]
 
 # 字義の中で「その字のことを言っている」箇所。原文も訳も、参照する字は
 # 「X」で囲むか、= の直後に置く形で書かれている。ここだけリンクにする
@@ -257,7 +285,10 @@ class Builder:
                 out.append(self.zi_link(ch, html.escape(ch)))
                 continue
             if needs_glyph(ch) and (GLYPHS / f"u{h}.svg").exists():
-                g = (f'<img class="ig" src="../glyphs/u{h}.svg" alt="">'
+                # 後回しにする。UK-source に字義を入れたら本文中の字形が
+                # 4,295 枚になり、全部を先に取りに行って表示が 31 秒掛かった
+                g = (f'<img class="ig" src="../glyphs/u{h}.svg" alt="" '
+                     f'loading="lazy" decoding="async">'
                      f'<span class="sr">{html.escape(ch)}</span>')
                 out.append(self.zi_link(ch, g, "igl") if link else g)
             else:
@@ -272,11 +303,13 @@ class Builder:
 
     # -- zi.tools の字義 -----------------------------------------------------
     def zi_ja(self, text):
-        """字義の日本語訳。「同=X」「同「X」」だけは数が多いので機械的に訳す。"""
+        """字義の日本語訳。数の多い決まった形だけ機械的に訳す。"""
         if text in self.zija:
             return self.zija[text]
-        m = SAME_AS.fullmatch(text)
-        return f"「{m[1]}」に同じ" if m else ""
+        for rx, fmt in FORMULA:
+            if m := rx.fullmatch(text):
+                return fmt.format(*m.groups())
+        return ""
 
     def definition(self, en):
         """kDefinition。英語のままだと意味を取るのに手間が掛かるので訳を添える。
@@ -1102,7 +1135,8 @@ function apply(){{
   count.textContent=hits.length+' / '+rows.length+' 字';
   if(solo) return showOne();
   const on=new Set(hits);
-  for(const r of rows) r.style.display=on.has(r)?'':'none';
+  // 値が同じでも書くと 3,409 行ぶん style が無効化される。変わるものだけ触る
+  for(const r of rows){{const v=on.has(r)?'':'none';if(r.style.display!==v)r.style.display=v;}}
 }}
 function setCat(v){{
   cat=v;
@@ -1178,7 +1212,8 @@ addEventListener('resize',navh); navh();
 
 const narrow=matchMedia('(max-width: 900px)');
 function fold(){{
-  for(const d of document.querySelectorAll('details.dt')) d.open=!narrow.matches;
+  const op=!narrow.matches;
+  for(const x of document.querySelectorAll('details.dt')) if(x.open!==op) x.open=op;
   // 広い画面では畳む余地が無いので、見出しごと消して常に開いておく
   chiptog.hidden=!narrow.matches;
   chips.classList.toggle('open',!narrow.matches);
@@ -1286,7 +1321,10 @@ addEventListener('keydown',e=>{{
   else if(e.key==='ArrowLeft') {{ e.preventDefault(); step(-1); }}
   else if(e.key==='Escape') {{ setSolo(false); save(); }}
 }});
-tb.addEventListener('toggle',save,true);
+// 出典の開け閉めも覚えるが、まとめてから書く。<details> は読み込みのときに
+// 全件ぶん toggle を出すので、1 件ずつ save すると querySelectorAll と
+// レイアウトが 3,410 回走る (UK-source で 20 秒掛かっていた)
+let sv; tb.addEventListener('toggle',()=>{{clearTimeout(sv);sv=setTimeout(save,200);}},true);
 let timer; addEventListener('scroll',()=>{{clearTimeout(timer);timer=setTimeout(save,150);}},
                             {{passive:true}});
 addEventListener('pagehide',()=>save(false));
