@@ -453,8 +453,12 @@ class Builder:
         for t in self.pairs.get(cp, []):
             v = self.uni.get(t, {})
             lhex = t[2:].lower()
-            g = (f'<img class="pg" src="../glyphs/u{lhex}.svg" alt="{t}">'
-                 if (GLYPHS / f"u{lhex}.svg").exists() else "")
+            # 本体と同じく日本の形を優先する。片方だけ既定の形にすると、
+            # 字形の差なのか国の差なのかが分からなくなる
+            gf = next((f"u{lhex}-j.svg" for _ in [0]
+                       if (GLYPHS / f"u{lhex}-j.svg").exists()), f"u{lhex}.svg")
+            g = (f'<img class="pg" src="../glyphs/{gf}" alt="{t}">'
+                 if (GLYPHS / gf).exists() else "")
             rd = " / ".join(f"{lab} {html.escape(v[k])}" for k, lab in
                             (("kJapanese", "和"), ("kMandarin", "官"))
                             if v.get(k))

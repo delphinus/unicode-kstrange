@@ -338,6 +338,17 @@ class SpoofingTest(PageTest):
         idc = re.search(r'<td class="id">(.*?)</td>', r, re.S).group(1)
         self.assertIn("部首 74 月", idc)
 
+    def test_partner_uses_the_same_rule(self):
+        """相手の字形も日本の形を優先する。
+
+        片方だけ既定の形にすると、字形の差なのか国の差なのかが分からなくなる。
+        日本のソースが無い字は既定に落ちる (U+29C18 など)。
+        """
+        from common import GLYPHS
+        for m in re.finditer(r'class="pg" src="\.\./glyphs/(u[0-9a-f]+)\.svg"', self.html):
+            self.assertFalse((GLYPHS / f"{m.group(1)}-j.svg").exists(),
+                             f"{m.group(1)} は日本の形があるのに使っていない")
+
     def test_relation_is_closed(self):
         """相互に登録されていること (片側だけだと相手から辿れない)。"""
         from common import spoofing_pairs, unihan
