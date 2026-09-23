@@ -24,7 +24,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const SITE = (process.env.KANJI_URL || "").replace(/\/$/, "");
 const ID = process.env.CF_ACCESS_CLIENT_ID || "";
@@ -33,6 +33,8 @@ const LIVE = SITE !== "";
 const AUTHED = LIVE && ID !== "" && SECRET !== "";
 
 const DOCS = new URL("../../docs/", import.meta.url).pathname;
+// worktree には生成物が付いてこない。手元に無ければ突き合わせは飛ばす
+const BUILT = existsSync(`${DOCS}kstrange/index.html`);
 /** 一覧のページ。件数は build_html が書くので、ここでは持たない。 */
 const PAGES = ["/", "/lucky/", "/kstrange/", "/uk/", "/u-source/", "/spoofing/"];
 
@@ -45,7 +47,12 @@ type Res = { code: number; size: number; headers: Record<string, string>; body: 
 async function get(path: string, o: { auth?: boolean; body?: boolean; raw?: boolean;
                                       since?: string } = {}): Promise<Res> {
   const args = ["curl", "-sS", "--max-time", "60", "-D", "/dev/stderr"];
-  args.push("-H", o.raw ? "Accept-Encoding: identity" : "Accept-Encoding: gzip");
+  // 大きさを測るときは curl に展開させない (圧縮後の byte 数が知りたい)。
+  // 中身を読むときは --compressed で展開させる。生のまま読むと gzip の
+  // バイト列を UTF-8 として解釈してしまい、md5 が合わなくなる
+  if (o.raw) args.push("-H", "Accept-Encoding: identity");
+  else if (o.body) args.push("--compressed");
+  else args.push("-H", "Accept-Encoding: gzip");
   if (o.auth) args.push("-H", `CF-Access-Client-Id: ${ID}`,
                         "-H", `CF-Access-Client-Secret: ${SECRET}`);
   if (o.since) args.push("-H", `If-Modified-Since: ${o.since}`);
@@ -133,7 +140,7 @@ describe.if(AUTHED)("サービストークンで通ること", () => {
     expect(again.size).toBe(0);
   }, 60_000);
 
-  test("手元のものが本当に届いている", async () => {
+  test.if(BUILT)("手元のものが本当に届いている", async () => {
     // rsync の抜けや、古い生成物が残っているのに気付けるようにする
     const md5 = (s: string | Buffer) => createHash("md5").update(s).digest("hex");
     for (const slug of ["kstrange", "spoofing"]) {
