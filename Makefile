@@ -4,7 +4,8 @@ PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
 .PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
-        index lucky test test-browser check check-links check-utn43 clean distclean
+        index lucky test test-browser test-access check check-links check-utn43\
+        clean distclean
 
 all: fetch glyphs wiktionary zi-tools uk-source l2docs html index lucky
 
@@ -47,6 +48,15 @@ lucky:
 ## 生成物の中身を確かめる (標準ライブラリだけ、ブラウザ不要)
 test:
 	$(SCRIPTS) -m unittest discover -s tests
+
+## 配信している実物を Cloudflare Access 越しに確かめる (bun が要る)
+##   KANJI_URL                  https://<ホスト>
+##   CF_ACCESS_CLIENT_ID        Access のサービストークン (無ければ
+##   CF_ACCESS_CLIENT_SECRET    「外から読めないこと」だけ動く)
+test-access:
+	@if ! command -v bun >/dev/null; then echo "bun が無いので飛ばす"; \
+	elif [ -z "$$KANJI_URL" ]; then echo "KANJI_URL が無いので飛ばす"; \
+	else cd tests/access && bun test --timeout 120000; fi
 
 ## 画面の挙動を確かめる (bun と Chrome が要る。無ければ飛ばす)
 test-browser:
