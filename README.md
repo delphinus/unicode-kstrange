@@ -46,6 +46,7 @@ Python 3.11 以上のみ (標準ライブラリだけで動く)。`make test-bro
 ```sh
 make test          # 生成物の中身。2 秒、ブラウザ不要
 make test-browser  # 画面の挙動。30 秒、bun と Chrome が要る
+make test-safari   # Safari での画面の挙動。指定したときだけ流す
 ```
 
 並べてあるのは**実際に踏んだ不具合**で、思い付きの網羅ではない。`tests/test_pages.py`
@@ -53,6 +54,10 @@ make test-browser  # 画面の挙動。30 秒、bun と Chrome が要る
 札の長さ、差し替えた字が検索から落ちていないか…)。`tests/browser/site.test.ts` は
 ヘッドレス Chrome で、絞り込みと再読み込みの復元、横に溢れないこと、
 900px での切り替え、暗い配色での字形、フォントの読み込みを見る。
+`tests/safari/site.test.ts` は同じことの一部を本物の Safari で見る。ヘッドレスの WebKit とは
+挙動が違うので safaridriver で動かすが、ヘッドレスにできず Safari のウィンドウが前面に出るため、
+`make test-browser` には混ぜず指定したときだけ流す。先に Safari の設定 → デベロッパ →
+「リモートオートメーションを許可」をオンにしておく。
 
 | ターゲット | 中身 |
 |---|---|
@@ -65,6 +70,7 @@ make test-browser  # 画面の挙動。30 秒、bun と Chrome が要る
 | `make html` | `docs/index.html` を組み立てる |
 | `make test` | 生成物の中身を確かめる。標準ライブラリだけで動き、ブラウザは要らない |
 | `make test-browser` | 画面の挙動を確かめる。bun と Chrome が要る (無ければ飛ばす) |
+| `make test-safari` | 画面の挙動を Safari で確かめる。bun と Safari が要る。Safari が前面に出るので指定したときだけ |
 | `make check-links` | 生成物のリンクを叩いて、開けないものを出す。`SAMPLE=15` でホストごとに 15 本だけ (828 字だと全部で 4,547 本あるため) |
 | `make check-utn43` | UTN #43 の PDF の記述と Unihan の件数を比べる |
 

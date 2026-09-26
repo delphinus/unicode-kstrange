@@ -536,6 +536,15 @@ describe.if(READY)("国ごとの字形", () => {
     expect(o.国).toEqual(["日本", "中国", "台湾"]);
     expect(o.参照[0]).toBe("JA3-7E3E");
     expect(o.重ね).toBe("none");
+
+    // 畳んだ中の画像は lazy なので、開いたあとで本当に読み込まれるかを見る。
+    // Safari で出ないことがあった (tests/safari にも同じものがある)
+    await Bun.sleep(700);
+    const 幅 = await p.evaluate(() =>
+      [...document.querySelectorAll("#tb tr:not([style*='none']) details.sv .sv1 img")]
+        .map((i) => (i as HTMLImageElement).naturalWidth));
+    expect(幅.length).toBe(3);
+    expect(幅.every((w) => w > 0)).toBe(true);
     await p.close();
   }, 40_000);
 

@@ -4,7 +4,7 @@ PY       ?= python3
 SCRIPTS  := PYTHONPATH=scripts $(PY)
 
 .PHONY: all fetch glyphs wiktionary zi-tools uk-source l2docs html \
-        index lucky test test-browser test-access check check-links check-utn43\
+        index lucky test test-browser test-safari test-access check check-links check-utn43\
         clean distclean
 
 all: fetch glyphs wiktionary zi-tools uk-source l2docs html index lucky
@@ -64,6 +64,13 @@ test-browser:
 	cd tests/browser && bun install --frozen-lockfile 2>/dev/null || \
 		(cd tests/browser && bun install)
 	cd tests/browser && bun test --timeout 60000
+
+## Safari で画面の挙動を確かめる (bun と Safari が要る。指定したときだけ)
+##   Safari のウィンドウが前面に出て操作されるので、test-browser には混ぜない。
+##   設定 → デベロッパ →「リモートオートメーションを許可」を先にオンにしておく
+test-safari:
+	@command -v bun >/dev/null || { echo "bun が無いので飛ばす"; exit 0; }
+	cd tests/safari && bun test --timeout 60000
 
 check: test check-links check-utn43
 
