@@ -7,8 +7,8 @@
  * 分からないことがある。
  *
  *   * 外から読めてしまっていないか (いちばん大事。生成物には公開したくない
- *     ものが混ざっているので、認証が外れたら気付けないと困る)
- *   * 圧縮が末端まで効いているか (オリジンで gzip しても、経路のどこかで
+ *     ものが含まれているので、認証が外れたら気付けないと困る)
+ *   * 圧縮が末端まで保たれているか (オリジンで gzip しても、途中のどこかで
  *     解かれたら意味が無い)
  *   * Cache-Control がトンネルを越えて残っているか
  *   * 手元のものが本当に届いているか
@@ -33,7 +33,7 @@ const LIVE = SITE !== "";
 const AUTHED = LIVE && ID !== "" && SECRET !== "";
 
 const DOCS = new URL("../../docs/", import.meta.url).pathname;
-// worktree には生成物が付いてこない。手元に無ければ突き合わせは飛ばす
+// worktree には生成物が付いてこない。手元に無ければ比べるのは飛ばす
 const BUILT = existsSync(`${DOCS}kstrange/index.html`);
 /** 一覧のページ。件数は build_html が書くので、ここでは持たない。 */
 const PAGES = ["/", "/lucky/", "/kstrange/", "/uk/", "/u-source/", "/spoofing/"];
@@ -83,7 +83,7 @@ describe.if(LIVE)("外から読めないこと", () => {
   }, 60_000);
 
   test("字形の SVG も守られている", async () => {
-    // ページだけ守って中身が素通り、という穴が開いていないか
+    // ページだけ守って中身は誰でも読める、という抜けが無いか
     const r = await get("/glyphs/u3b35.svg");
     expect(r.code).toBe(302);
   }, 60_000);
@@ -113,14 +113,14 @@ describe.if(AUTHED)("サービストークンで通ること", () => {
   }, 60_000);
 
   test("圧縮が末端まで効いている", async () => {
-    // オリジンで gzip しても、経路のどこかで解かれたら意味が無い。
+    // オリジンで gzip しても、途中のどこかで解かれたら意味が無い。
     // 生の 8.5 MB が流れていたのを直したので、そこへ戻っていないかを見る
     const gz = await get("/uk/", { auth: true });
     expect(gz.headers["content-encoding"]).toBe("gzip");
     expect(gz.size).toBeLessThan(2_000_000);
 
     const raw = await get("/uk/", { auth: true, raw: true });
-    expect(raw.size).toBeGreaterThan(gz.size * 4);   // 実測 12 倍
+    expect(raw.size).toBeGreaterThan(gz.size * 4);   // 測ると 12 倍
   }, 120_000);
 
   test("Cache-Control がトンネルを越えて残っている", async () => {

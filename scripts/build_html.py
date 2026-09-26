@@ -93,7 +93,7 @@ HAN = r"[\u3400-\u4DBF\u4E00-\u9FFF\U00020000-\U0003FFFF]"
 REF = re.compile(f"「({HAN})」|=({HAN})(?!{HAN})")
 
 
-# 1 字ぶんの行。狭い画面では表を崩してカードにするので、列ごとの中身に
+# 1 字ぶんの行。狭い画面では表をやめてカードにするので、列ごとの中身に
 # それぞれ見出しを持たせてある (<thead> が消えても何の欄か分かるように)。
 TR = """
 <tr data-search="{search}" data-strokes="{strokes}" data-cp="{n}" data-cats="{catkeys}">
@@ -1074,7 +1074,7 @@ details.dt > summary { display:none }
 
 /* ── 狭い画面 ─────────────────────────────────────────────
    4 列の表は幅 1,500px 前提で、スマホでは潰れて読めない。
-   表を崩して 1 字 1 枚のカードにし、出典は畳んでおく。 */
+   表をやめて 1 字 1 枚のカードにし、出典は畳んでおく。 */
 @media (max-width: 900px) {
   header { padding:.9rem 1rem .6rem }
   .nav { padding:.45rem 1rem; font-size:.78rem }
@@ -1433,7 +1433,7 @@ addEventListener('keydown',e=>{{
 }});
 // 出典の開け閉めも覚えるが、まとめてから書く。<details> は読み込みのときに
 // 全件ぶん toggle を出すので、1 件ずつ save すると querySelectorAll と
-// レイアウトが 3,410 回走る (UK-source で 20 秒掛かっていた)
+// レイアウトの計算が 3,410 回起きる (UK-source で 20 秒掛かっていた)
 let sv; tb.addEventListener('toggle',()=>{{clearTimeout(sv);sv=setTimeout(save,200);}},true);
 let timer; addEventListener('scroll',()=>{{clearTimeout(timer);timer=setTimeout(save,150);}},
                             {{passive:true}});

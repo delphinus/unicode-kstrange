@@ -142,7 +142,7 @@ def radicals() -> dict[str, str]:
 # (包摂) ので、1 つの符号位置に「どの国の形か」が複数ぶら下がっている。
 # GlyphWiki は u4c17-j のように接尾辞で持っていて、Unihan のソース欄と対応する。
 # GlyphWiki が返すのはこの 7 つだけ (kIRG_MSource と kIRG_SSource は無い)。
-# 日本を先頭に置く。既定で出すのは日本の形なので、並びもそれに合わせる
+# 日本を先頭に置く。ページに出すのは日本の形なので、並びもそれに合わせる
 SOURCES = {
     "kIRG_JSource": ("j", "日本", "日"),
     "kIRG_GSource": ("g", "中国", "中"),

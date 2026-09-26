@@ -21,7 +21,7 @@ BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
               "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36")
 
 # 公開先を Referer として送る。ホットリンクを弾くサイトがあり、Referer 無しで叩くと
-# 素通りしてしまって、実際にクリックしたときだけ失敗する状態を見逃す
+# 問題無く開けてしまって、実際にクリックしたときだけ失敗する状態を見逃す
 # (kangxizidian.com のページ画像がこれだった)。
 REFERER = "https://delphinus.github.io/unicode-kstrange/"
 
@@ -43,7 +43,7 @@ def status(url, retries=1):
         except urllib.error.HTTPError as e:
             return e.code
         except urllib.error.URLError as e:
-            # リダイレクトの輪に落ちるのもホットリンク対策でよくある形
+            # リダイレクトが輪になって終わらないのもホットリンク対策でよくある形
             if "redirect" in str(e.reason).lower():
                 return "リダイレクトの輪"
             if attempt == retries:

@@ -342,7 +342,7 @@ class SpoofingTest(PageTest):
         """相手の字形も日本の形を優先する。
 
         片方だけ既定の形にすると、字形の差なのか国の差なのかが分からなくなる。
-        日本のソースが無い字は既定に落ちる (U+29C18 など)。
+        日本のソースが無い字は既定の形を使う (U+29C18 など)。
         """
         from common import GLYPHS
         for m in re.finditer(r'class="pg" src="\.\./glyphs/(u[0-9a-f]+)\.svg"', self.html):

@@ -491,7 +491,7 @@ describe.if(READY)("重さ", () => {
   test("一番大きい一覧でも待たされない", async () => {
     // UK-source は 3,409 行・8 MB。字義を入れたとき 22 秒掛かるようになった。
     // <details> が読み込みで全件ぶん toggle を出すのに、その度に
-    // querySelectorAll とレイアウトを走らせていたのが原因。
+    // querySelectorAll とレイアウトの計算をしていたのが原因。
     const p = await browser.newPage();
     await p.setViewport({ width: 1400, height: 900 });
     const t0 = Date.now();
